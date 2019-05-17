@@ -1,0 +1,49 @@
+﻿<UserControl x:Class="VADEdit.AudioChunkView"
+             Name="this"
+             xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006" 
+             xmlns:d="http://schemas.microsoft.com/expression/blend/2008" 
+             xmlns:local="clr-namespace:VADEdit"
+             mc:Ignorable="d" 
+             Height="30" d:DesignWidth="800"
+             Background="White">
+    <UserControl.Resources>
+        <local:NegateVisibilityConverter x:Key="negateVisibility" />
+    </UserControl.Resources>
+    <Grid>
+        <Grid.ColumnDefinitions>
+            <ColumnDefinition Width="auto"/>
+            <ColumnDefinition Width="auto"/>
+            <ColumnDefinition Width="auto"/>
+            <ColumnDefinition />
+            <ColumnDefinition Width="auto"/>
+            <ColumnDefinition Width="auto"/>
+        </Grid.ColumnDefinitions>
+        <Button Name="btnPlay" Click="btnPlay_Click" Visibility="{Binding PlayButtonVisibility, ElementName=this}" Margin="1" Content="4" FontFamily="Webdings" FontSize="20" Foreground="Green" Width="{Binding ActualHeight, RelativeSource={RelativeSource Self}}" ToolTip="Play"/>
+        <Button Name="btnStop" Click="btnStop_Click" Visibility="{Binding PlayButtonVisibility, ElementName=this, Converter={StaticResource negateVisibility}}" Margin="1" Content="&lt;" FontFamily="Webdings" FontSize="20" Foreground="Black" Width="{Binding ActualHeight, RelativeSource={RelativeSource Self}}" ToolTip="Stop"/>
+        <TextBlock Text="{Binding TimeRange, ElementName=this}" VerticalAlignment="Center" Grid.Column="1" Margin="5,1"/>
+        <Button Name="btnStt" Click="btnStt_Click" Content=">> STT >>" Grid.Column="2" Margin="1" Width="100" ToolTip="Convert range to text"/>
+        <TextBox Name="txtSpeech" Text="{Binding SpeechText, ElementName=this}" Background="Transparent" VerticalContentAlignment="Center" Grid.Column="3" Margin="1"  GotKeyboardFocus="TextBox_GotKeyboardFocus" SelectionBrush="Green" TextChanged="txtSpeech_TextChanged">
+            <!--<TextBox.Style>
+                <Style TargetType="TextBox">
+                    <Style.Triggers>
+                        <DataTrigger Binding="{Binding IsKeyboardFocused, RelativeSource={RelativeSource Self}}" Value="false">
+                            <Setter Property="Template">
+                                <Setter.Value>
+                                    <ControlTemplate TargetType="TextBox">
+                                        <Border BorderBrush="{TemplateBinding BorderBrush}" BorderThickness="{TemplateBinding BorderThickness}">
+                                            <TextBlock Text="{TemplateBinding Text}" TextTrimming="CharacterEllipsis" VerticalAlignment="Center" Margin="2"/>
+                                        </Border>
+                                    </ControlTemplate>
+                                </Setter.Value>
+                            </Setter>
+                        </DataTrigger>
+                    </Style.Triggers>
+                </Style>
+            </TextBox.Style>-->
+        </TextBox>
+        <Button Name="btnExport" Click="btnExport_Click" Content="ü" FontFamily="Wingdings" FontSize="20" Foreground="Green" Grid.Column="4" Margin="1" Width="{Binding ActualHeight, RelativeSource={RelativeSource Self}}" ToolTip="Export"/>
+        <Button Name="btnDelete" Click="btnDelete_Click" Content="û" FontFamily="Wingdings" FontSize="20" Foreground="Red" Grid.Column="5" Margin="1" Width="{Binding ActualHeight, RelativeSource={RelativeSource Self}}" ToolTip="Remove"/>
+    </Grid>
+</UserControl>
