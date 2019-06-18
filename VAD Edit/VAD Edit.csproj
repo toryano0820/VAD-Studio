@@ -136,7 +136,6 @@
     <Compile Include="AudioChunkView.xaml.cs">
       <DependentUpon>AudioChunkView.xaml</DependentUpon>
     </Compile>
-    <Compile Include="ConfigLoader.cs" />
     <Compile Include="Models\INIConfig.cs" />
     <Compile Include="Utils.cs" />
     <Compile Include="WpfScreen.cs" />

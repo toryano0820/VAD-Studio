@@ -2,6 +2,7 @@
 using System.Collections.Generic;
 using System.IO;
 using System.Linq;
+using System.Net;
 using System.Net.NetworkInformation;
 using System.Reflection;
 using System.Runtime.InteropServices;
@@ -14,28 +15,24 @@ namespace VADEdit
 {
     public static class Utils
     {
-        public static bool IsNetworkAvailable(long minimumSpeed = 0)
+        #region network
+
+        public static bool IsNetworkAvailable()
         {
-            if (NetworkInterface.GetIsNetworkAvailable())
+            try
             {
-                foreach (NetworkInterface ni in NetworkInterface.GetAllNetworkInterfaces())
+                using (var client = new WebClient())
+                using (client.OpenRead("http://clients3.google.com/generate_204"))
                 {
-                    if ((ni.OperationalStatus != OperationalStatus.Up) ||
-                        (ni.NetworkInterfaceType == NetworkInterfaceType.Loopback) ||
-                        (ni.NetworkInterfaceType == NetworkInterfaceType.Tunnel))
-                        continue;
-                    if (ni.Speed < minimumSpeed)
-                        continue;
-                    if ((ni.Description.IndexOf("virtual", StringComparison.OrdinalIgnoreCase) >= 0) ||
-                        (ni.Name.IndexOf("virtual", StringComparison.OrdinalIgnoreCase) >= 0))
-                        continue;
-                    if (ni.Description.Equals("Microsoft Loopback Adapter", StringComparison.OrdinalIgnoreCase))
-                        continue;
                     return true;
                 }
             }
-            return false;
+            catch
+            {
+                return false;
+            }
         }
+        #endregion
 
         public static IEnumerable<int> Range(int start, int end, int step = 1)
         {

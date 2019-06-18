@@ -127,6 +127,11 @@ namespace VADEdit
             txtSpeech.Focus();
             base.OnPreviewMouseLeftButtonDown(e);
         }
+
+        private void txtTime_PreviewMouseLeftButtonDown(object sender, MouseButtonEventArgs e)
+        {
+            e.Handled = true;
+        }
     }
 
     public class NegateVisibilityConverter : IValueConverter

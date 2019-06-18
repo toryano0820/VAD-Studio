@@ -21,6 +21,8 @@
         <TextBlock Text="Max Silence (ms)" VerticalAlignment="Top" HorizontalAlignment="Right" Margin="0,181,96,0"/>
         <TextBox Name="txtMaxSilence" Text="300" VerticalContentAlignment="Center" HorizontalContentAlignment="Center" Height="25" VerticalAlignment="Top" HorizontalAlignment="Right" Width="100" Margin="0,198,85,0"/>
         <Button Name="btnSplit" Content="Split" Height="41" VerticalAlignment="Top" HorizontalAlignment="Right" Width="70" Margin="0,182,10,0" Click="Split_Click" IsEnabled="False"/>
+        <Button Name="btnSTTAll" Content="STT All" Height="41" VerticalAlignment="Top" Margin="0,228,85,0" Click="STTAll_Click" HorizontalAlignment="Right" Width="70" IsEnabled="False"/>
+        <Button Name="btnExportAll" Content="Export All" Height="41" VerticalAlignment="Top" Margin="0,228,10,0" Click="ExportAll_Click" HorizontalAlignment="Right" Width="70" IsEnabled="False"/>
         <Border BorderThickness="1" BorderBrush="Red" Margin="10,10,10,0" Height="167" VerticalAlignment="Top">
             <local:WaveFormView x:Name="waveView" PlayRangeEnded="waveView_PlayRangeEnded" ClipToBounds="True"/>
         </Border>
@@ -37,7 +39,5 @@
         <Grid Name="grdWait" Background="#DD000000" Visibility="Hidden">
             <TextBlock Name="txtWait" Text="Please wait..." VerticalAlignment="Center" HorizontalAlignment="Center" Foreground="White" FontSize="20"/>
         </Grid>
-        <Button Name="btnSTTAll" Content="STT All" Height="41" VerticalAlignment="Top" Margin="0,228,85,0" Click="STTAll_Click" HorizontalAlignment="Right" Width="70"/>
-        <Button Name="btnExportAll" Content="Export All" Height="41" VerticalAlignment="Top" Margin="0,228,10,0" Click="ExportAll_Click" HorizontalAlignment="Right" Width="70"/>
     </Grid>
 </Window>
