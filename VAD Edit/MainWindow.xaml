@@ -14,17 +14,17 @@
         </Button>
         <Button Name="btnPlay" Content="Play" Height="41" VerticalAlignment="Top" HorizontalAlignment="Left" Width="70" Margin="185,182,0,0" Click="Play_Clicked" IsEnabled="False"/>
         <Button Name="btnPause" Content="Pause" Height="41" VerticalAlignment="Top" HorizontalAlignment="Left" Width="70" Margin="260,182,0,0" Click="Pause_Click" IsEnabled="False"/>
-        <TextBlock Text="Min Length (ms)" VerticalAlignment="Top" HorizontalAlignment="Right" Margin="0,181,351,0" />
-        <TextBox Name="txtMinLength" Text="1000" VerticalContentAlignment="Center" HorizontalContentAlignment="Center" Height="25" VerticalAlignment="Top" HorizontalAlignment="Right" Width="100" Margin="0,198,345,0"/>
-        <TextBlock Text="Min Volume (%)" VerticalAlignment="Top" HorizontalAlignment="Right" Margin="0,181,248,0" />
-        <TextBox Name="txtMinVolume" Text="5" VerticalContentAlignment="Center" HorizontalContentAlignment="Center" Height="25" VerticalAlignment="Top" HorizontalAlignment="Right" Width="100" Margin="0,198,240,0"/>
-        <TextBlock Text="Max Silence (ms)" VerticalAlignment="Top" HorizontalAlignment="Right" Margin="0,181,138,0"/>
-        <TextBox Name="txtMaxSilence" Text="300" VerticalContentAlignment="Center" HorizontalContentAlignment="Center" Height="25" VerticalAlignment="Top" HorizontalAlignment="Right" Width="100" Margin="0,198,135,0"/>
-        <Button Name="btnSplit" Content="Split" Height="41" VerticalAlignment="Top" HorizontalAlignment="Right" Width="120" Margin="0,182,10,0" Click="Split_Click" IsEnabled="False"/>
-        <Border BorderThickness="1" BorderBrush="Black" Margin="10,10,10,0" Height="167" VerticalAlignment="Top">
-            <local:WaveFormView x:Name="waveView" PlayRangeEnded="waveView_PlayRangeEnded"/>
+        <TextBlock Text="Min Length (ms)" VerticalAlignment="Top" HorizontalAlignment="Right" Margin="0,181,308,0" />
+        <TextBox Name="txtMinLength" Text="1000" VerticalContentAlignment="Center" HorizontalContentAlignment="Center" Height="25" VerticalAlignment="Top" HorizontalAlignment="Right" Width="100" Margin="0,198,295,0"/>
+        <TextBlock Text="Min Volume (%)" VerticalAlignment="Top" HorizontalAlignment="Right" Margin="0,181,205,0" />
+        <TextBox Name="txtMinVolume" Text="5" VerticalContentAlignment="Center" HorizontalContentAlignment="Center" Height="25" VerticalAlignment="Top" HorizontalAlignment="Right" Width="100" Margin="0,198,190,0"/>
+        <TextBlock Text="Max Silence (ms)" VerticalAlignment="Top" HorizontalAlignment="Right" Margin="0,181,96,0"/>
+        <TextBox Name="txtMaxSilence" Text="300" VerticalContentAlignment="Center" HorizontalContentAlignment="Center" Height="25" VerticalAlignment="Top" HorizontalAlignment="Right" Width="100" Margin="0,198,85,0"/>
+        <Button Name="btnSplit" Content="Split" Height="41" VerticalAlignment="Top" HorizontalAlignment="Right" Width="70" Margin="0,182,10,0" Click="Split_Click" IsEnabled="False"/>
+        <Border BorderThickness="1" BorderBrush="Red" Margin="10,10,10,0" Height="167" VerticalAlignment="Top">
+            <local:WaveFormView x:Name="waveView" PlayRangeEnded="waveView_PlayRangeEnded" ClipToBounds="True"/>
         </Border>
-        <Border BorderThickness="1" BorderBrush="Gray" Margin="10,228,10,35">
+        <Border BorderThickness="1" BorderBrush="Gray" Margin="10,274,10,35">
             <ScrollViewer HorizontalScrollBarVisibility="Disabled" VerticalScrollBarVisibility="Auto">
                 <StackPanel Name="grdTime" />
             </ScrollViewer>
@@ -33,30 +33,11 @@
             <TextBlock Name="txtCount" Text="Count: 0" Margin="10,0"/>
         </StatusBar>
         <TextBlock HorizontalAlignment="Left" Margin="359,181,0,0" TextWrapping="Wrap" Text="Chunk Save Location" VerticalAlignment="Top"/>
-        <TextBox Name="txtChunkLocation" Height="25" Margin="359,197,473,0" TextWrapping="NoWrap" VerticalAlignment="Top" VerticalContentAlignment="Center" IsEnabled="False" IsReadOnly="True" ToolTip="{Binding Text, RelativeSource={RelativeSource Self}}">
-            <!--<TextBox.Style>
-                <Style TargetType="TextBox">
-                    <Style.Triggers>
-                        <DataTrigger Binding="{Binding IsKeyboardFocused, RelativeSource={RelativeSource Self}}" Value="false">
-                            <Setter Property="Template">
-                                <Setter.Value>
-                                    <ControlTemplate TargetType="TextBox">
-                                        <Border BorderBrush="{TemplateBinding BorderBrush}" BorderThickness="{TemplateBinding BorderThickness}">
-                                            <TextBlock Text="{TemplateBinding Text}" TextTrimming="CharacterEllipsis" VerticalAlignment="Center" Margin="2"/>
-                                        </Border>
-                                    </ControlTemplate>
-                                </Setter.Value>
-                            </Setter>
-                        </DataTrigger>
-                        <Trigger Property="IsMouseOver" Value="True">
-                            <Setter Property="ToolTip" Value="{Binding Text, RelativeSource={RelativeSource Self}}"/>
-                        </Trigger>
-                    </Style.Triggers>
-                </Style>
-            </TextBox.Style>-->
-        </TextBox>
+        <TextBox Name="txtChunkLocation" Height="25" Margin="359,197,420,0" TextWrapping="NoWrap" VerticalAlignment="Top" VerticalContentAlignment="Center" IsEnabled="False" IsReadOnly="True" ToolTip="{Binding Text, RelativeSource={RelativeSource Self}}"/>
         <Grid Name="grdWait" Background="#DD000000" Visibility="Hidden">
             <TextBlock Name="txtWait" Text="Please wait..." VerticalAlignment="Center" HorizontalAlignment="Center" Foreground="White" FontSize="20"/>
         </Grid>
+        <Button Name="btnSTTAll" Content="STT All" Height="41" VerticalAlignment="Top" Margin="0,228,85,0" Click="STTAll_Click" HorizontalAlignment="Right" Width="70"/>
+        <Button Name="btnExportAll" Content="Export All" Height="41" VerticalAlignment="Top" Margin="0,228,10,0" Click="ExportAll_Click" HorizontalAlignment="Right" Width="70"/>
     </Grid>
 </Window>

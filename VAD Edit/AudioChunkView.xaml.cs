@@ -124,7 +124,7 @@ namespace VADEdit
 
         protected override void OnPreviewMouseLeftButtonDown(MouseButtonEventArgs e)
         {
-            Keyboard.Focus(txtSpeech);
+            txtSpeech.Focus();
             base.OnPreviewMouseLeftButtonDown(e);
         }
     }

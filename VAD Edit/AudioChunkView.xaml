@@ -24,25 +24,7 @@
         <Button Name="btnStop" Click="btnStop_Click" Visibility="{Binding PlayButtonVisibility, ElementName=this, Converter={StaticResource negateVisibility}}" Margin="1" Content="&lt;" FontFamily="Webdings" FontSize="20" Foreground="Black" Width="{Binding ActualHeight, RelativeSource={RelativeSource Self}}" ToolTip="Stop"/>
         <TextBlock Text="{Binding TimeRange, ElementName=this}" VerticalAlignment="Center" Grid.Column="1" Margin="5,1"/>
         <Button Name="btnStt" Click="btnStt_Click" Content=">> STT >>" Grid.Column="2" Margin="1" Width="100" ToolTip="Convert range to text"/>
-        <TextBox Name="txtSpeech" Text="{Binding SpeechText, ElementName=this}" Background="Transparent" VerticalContentAlignment="Center" Grid.Column="3" Margin="1"  GotKeyboardFocus="TextBox_GotKeyboardFocus" SelectionBrush="Green" TextChanged="txtSpeech_TextChanged">
-            <!--<TextBox.Style>
-                <Style TargetType="TextBox">
-                    <Style.Triggers>
-                        <DataTrigger Binding="{Binding IsKeyboardFocused, RelativeSource={RelativeSource Self}}" Value="false">
-                            <Setter Property="Template">
-                                <Setter.Value>
-                                    <ControlTemplate TargetType="TextBox">
-                                        <Border BorderBrush="{TemplateBinding BorderBrush}" BorderThickness="{TemplateBinding BorderThickness}">
-                                            <TextBlock Text="{TemplateBinding Text}" TextTrimming="CharacterEllipsis" VerticalAlignment="Center" Margin="2"/>
-                                        </Border>
-                                    </ControlTemplate>
-                                </Setter.Value>
-                            </Setter>
-                        </DataTrigger>
-                    </Style.Triggers>
-                </Style>
-            </TextBox.Style>-->
-        </TextBox>
+        <TextBox Name="txtSpeech" Text="{Binding SpeechText, ElementName=this}" Background="Transparent" VerticalContentAlignment="Center" Grid.Column="3" Margin="1"  GotKeyboardFocus="TextBox_GotKeyboardFocus" SelectionBrush="Green" TextChanged="txtSpeech_TextChanged" />
         <Button Name="btnExport" Click="btnExport_Click" Content="ü" FontFamily="Wingdings" FontSize="20" Foreground="Green" Grid.Column="4" Margin="1" Width="{Binding ActualHeight, RelativeSource={RelativeSource Self}}" ToolTip="Export"/>
         <Button Name="btnDelete" Click="btnDelete_Click" Content="û" FontFamily="Wingdings" FontSize="20" Foreground="Red" Grid.Column="5" Margin="1" Width="{Binding ActualHeight, RelativeSource={RelativeSource Self}}" ToolTip="Remove"/>
     </Grid>
