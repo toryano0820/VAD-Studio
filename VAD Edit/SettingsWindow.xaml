@@ -1,0 +1,41 @@
+﻿<Window x:Class="VADEdit.SettingsWindow"
+        xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
+        xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
+        xmlns:local="clr-namespace:VADEdit"
+        mc:Ignorable="d"
+        Title="Options" Height="306.25" Width="285.831" WindowStyle="ToolWindow" WindowStartupLocation="CenterOwner" ResizeMode="NoResize" ShowInTaskbar="False">
+    <Grid>
+        <GroupBox Header="Split Options" Margin="10,10,10,0" Height="auto" VerticalAlignment="Top">
+            <Grid Margin="5">
+                <Grid.ColumnDefinitions>
+                    <ColumnDefinition />
+                    <ColumnDefinition />
+                </Grid.ColumnDefinitions>
+                <TextBlock Grid.Column="0" Text="Min Length (ms)" VerticalAlignment="Top" HorizontalAlignment="Left" Margin="0,5,0,0" />
+                <TextBox Grid.Column="1" x:Name="txtMinLength" Text="1000" VerticalContentAlignment="Center" HorizontalContentAlignment="Center" Height="25" VerticalAlignment="Top" HorizontalAlignment="Stretch" Margin="0,0,0,0" />
+                <TextBlock Grid.Column="0" Text="Min Volume (%)" VerticalAlignment="Top" HorizontalAlignment="Left" Margin="0,35,0,0" />
+                <TextBox Grid.Column="1" x:Name="txtMinVolume" Text="5" VerticalContentAlignment="Center" HorizontalContentAlignment="Center" Height="25" VerticalAlignment="Top" HorizontalAlignment="Stretch" Margin="0,30,0,0"/>
+                <TextBlock Grid.Column="0" Text="Max Silence (ms)" VerticalAlignment="Top" HorizontalAlignment="Left" Margin="0,65,0,0"/>
+                <TextBox Grid.Column="1" x:Name="txtMaxSilence" Text="300" VerticalContentAlignment="Center" HorizontalContentAlignment="Center" Height="25" VerticalAlignment="Top" Margin="0,60,0,0"/>
+            </Grid>
+        </GroupBox>
+        <GroupBox Header="STT Options" Margin="10,140,10,0" Height="auto" VerticalAlignment="Top">
+            <Grid Margin="5">
+                <Grid.ColumnDefinitions>
+                    <ColumnDefinition />
+                    <ColumnDefinition />
+                </Grid.ColumnDefinitions>
+                <TextBlock Grid.Column="0" Text="Language Code" VerticalAlignment="Top" HorizontalAlignment="Left" Margin="0,4,0,0" />
+                <ComboBox Grid.Column="1" x:Name="cmbLanguage" SelectedIndex="1" VerticalContentAlignment="Center" HorizontalContentAlignment="Center" Height="25" VerticalAlignment="Top" HorizontalAlignment="Stretch" Margin="0,0,0,0">
+                    <ComboBoxItem Content="en-US" />
+                    <ComboBoxItem Content="fil-PH" />
+                    <ComboBoxItem Content="th-TH" />
+                    <ComboBoxItem Content="zh-TW" />
+                </ComboBox>
+            </Grid>
+        </GroupBox>
+        <Button Content="OK" HorizontalAlignment="Right" Margin="0,0,20,20" VerticalAlignment="Bottom" Width="75" Height="25" IsDefault="True" Click="OK_Click"/>
+    </Grid>
+</Window>
