@@ -5,6 +5,7 @@ using System.ComponentModel;
 using System.Diagnostics;
 using System.IO;
 using System.Linq;
+using System.Text.RegularExpressions;
 using System.Threading;
 using System.Threading.Tasks;
 using System.Windows;
@@ -149,6 +150,13 @@ namespace VADEdit
                 grdWait.Visibility = Visibility.Visible;
                 grdMain.IsEnabled = false;
                 var chunkSaveLocation = System.IO.Path.Combine(OutputBasePath, dlg.SafeFileName.Substring(0, dlg.SafeFileName.Length - 4));
+                while(File.Exists(chunkSaveLocation + ".wav"))
+                {
+                    if (Regex.IsMatch(chunkSaveLocation, @"_\d+$"))
+                        chunkSaveLocation = Regex.Replace(chunkSaveLocation, @"_\d+$", "_" + (int.Parse(chunkSaveLocation.Split('_').Last()) + 1).ToString());
+                    else
+                        chunkSaveLocation = chunkSaveLocation + "_1";
+                }
                 Directory.CreateDirectory(OutputBasePath);
                 GC.Collect();
 
@@ -169,6 +177,14 @@ namespace VADEdit
                         ffmpeg.StartInfo.UseShellExecute = true;
                         ffmpeg.Start();
                         ffmpeg.WaitForExit();
+
+                        if (ffmpeg.ExitCode == 0)
+                        {
+                            Dispatcher.Invoke(() =>
+                            {
+                                LoadStream(chunkSaveLocation + ".wav");
+                            });
+                        }
                     }
                     catch (TaskCanceledException) { }
                     catch (Exception ex)
@@ -176,11 +192,6 @@ namespace VADEdit
                         File.AppendAllText("error.log", $"{DateTime.Now.ToString("yyyyMMddHHmmss")} [ERROR]: {ex.Message}:\n{ex.StackTrace}\n");
                         MessageBox.Show(ex.Message, "Program Error", MessageBoxButton.OK, MessageBoxImage.Error);
                     }
-
-                    Dispatcher.Invoke(() =>
-                    {
-                        LoadStream(chunkSaveLocation + ".wav");
-                    });
                 }).Start();
             }
             dlg.Dispose();
@@ -415,7 +426,7 @@ namespace VADEdit
                                 }
                             }
                         }
-                        catch(Exception ex)
+                        catch (Exception ex)
                         {
                             File.AppendAllText("error.log", $"{DateTime.Now.ToString("yyyyMMddHHmmss")} [ERROR]: {ex.Message}:\n{ex.StackTrace}\n");
                             if (!suppressErrorDialogs)
