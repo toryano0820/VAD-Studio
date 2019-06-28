@@ -19,13 +19,15 @@
             <ColumnDefinition />
             <ColumnDefinition Width="auto"/>
             <ColumnDefinition Width="auto"/>
+            <ColumnDefinition Width="auto"/>
         </Grid.ColumnDefinitions>
         <Button Name="btnPlay" Click="btnPlay_Click" Visibility="{Binding PlayButtonVisibility, ElementName=this}" Margin="1" Content="4" FontFamily="Webdings" FontSize="20" Foreground="Green" Width="{Binding ActualHeight, RelativeSource={RelativeSource Self}}" ToolTip="Play" Focusable="False"/>
         <Button Name="btnStop" Click="btnStop_Click" Visibility="{Binding PlayButtonVisibility, ElementName=this, Converter={StaticResource negateVisibility}}" Margin="1" Content="&lt;" FontFamily="Webdings" FontSize="20" Foreground="Black" Width="{Binding ActualHeight, RelativeSource={RelativeSource Self}}" ToolTip="Stop" Focusable="False"/>
         <Label Name="txtTime" Content="{Binding TimeRange, ElementName=this}" VerticalAlignment="Stretch" VerticalContentAlignment="Center" Grid.Column="1" Padding="5,1" PreviewMouseLeftButtonDown="txtTime_PreviewMouseLeftButtonDown"/>
         <Button Name="btnStt" Click="btnStt_Click" Content=">> STT >>" Grid.Column="2" Margin="1" Width="100" ToolTip="Convert range to text" Focusable="False"/>
-        <TextBox Name="txtSpeech" Text="{Binding SpeechText, ElementName=this}" Background="Transparent" VerticalContentAlignment="Center" Grid.Column="3" Margin="1"  GotKeyboardFocus="TextBox_GotKeyboardFocus" SelectionBrush="Green" TextChanged="txtSpeech_TextChanged" />
-        <Button Name="btnExport" Click="btnExport_Click" Content="ü" FontFamily="Wingdings" FontSize="20" Foreground="Green" Grid.Column="4" Margin="1" Width="{Binding ActualHeight, RelativeSource={RelativeSource Self}}" ToolTip="Export" Focusable="False"/>
-        <Button Name="btnDelete" Click="btnDelete_Click" Content="û" FontFamily="Wingdings" FontSize="20" Foreground="Red" Grid.Column="5" Margin="1" Width="{Binding ActualHeight, RelativeSource={RelativeSource Self}}" ToolTip="Remove" Focusable="False"/>
+        <TextBox Name="txtSpeech" Text="{Binding SpeechText, ElementName=this, UpdateSourceTrigger=PropertyChanged}" Background="Transparent" VerticalContentAlignment="Center" Grid.Column="3" Margin="1"  GotKeyboardFocus="TextBox_GotKeyboardFocus" SelectionBrush="Green" TextChanged="txtSpeech_TextChanged" />
+        <Button Name="btnDuplicate" Click="btnDuplicate_Click" Content="Ê" FontFamily="Wingdings" FontSize="20" VerticalContentAlignment="Center" Foreground="Orange" Grid.Column="4" Margin="1" Width="{Binding ActualHeight, RelativeSource={RelativeSource Self}}" ToolTip="Insert Duplicate Below" Focusable="False"/>
+        <Button Name="btnExport" Click="btnExport_Click" Content="ü" FontFamily="Wingdings" FontSize="20" Foreground="Green" Grid.Column="5" Margin="1" Width="{Binding ActualHeight, RelativeSource={RelativeSource Self}}" ToolTip="Export" Focusable="False"/>
+        <Button Name="btnDelete" Click="btnDelete_Click" Content="û" FontFamily="Wingdings" FontSize="20" Foreground="Red" Grid.Column="6" Margin="1" Width="{Binding ActualHeight, RelativeSource={RelativeSource Self}}" ToolTip="Remove" Focusable="False"/>
     </Grid>
 </UserControl>

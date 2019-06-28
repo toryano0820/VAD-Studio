@@ -15,7 +15,7 @@
         <Button Name="btnPlay" Content="Play" Height="41" VerticalAlignment="Top" HorizontalAlignment="Left" Width="70" Margin="185,182,0,0" Click="Play_Clicked" IsEnabled="False"/>
         <Button Name="btnPause" Content="Pause" Height="41" VerticalAlignment="Top" HorizontalAlignment="Left" Width="70" Margin="260,182,0,0" Click="Pause_Click" IsEnabled="False"/>
         <Button Name="btnSplit" Content="Split" Height="41" VerticalAlignment="Top" HorizontalAlignment="Right" Width="70" Margin="0,182,257,0" Click="Split_Click" IsEnabled="False"/>
-        <Button Name="btnSTTAll" Content="STT All" Height="41" VerticalAlignment="Top" ToolTip="Only chunks without text value yet will be processed" Margin="0,182,182,0" Click="STTAll_Click" HorizontalAlignment="Right" Width="70" IsEnabled="False"/>
+        <Button Name="btnSttAll" Content="STT All" Height="41" VerticalAlignment="Top" ToolTip="Only chunks without text value will be processed" Margin="0,182,182,0" Click="SttAll_Click" HorizontalAlignment="Right" Width="70" IsEnabled="False"/>
         <Button Name="btnExportAll" Content="Export All" Height="41" VerticalAlignment="Top" ToolTip="Only chunks with text value will be processed" Margin="0,182,107,0" Click="ExportAll_Click" HorizontalAlignment="Right" Width="70" IsEnabled="False"/>
         <Button x:Name="btnOptions" Content="Options" Height="41" VerticalAlignment="Top" Margin="0,182,10,0" Click="Options_Click" HorizontalAlignment="Right" Width="70"/>
         <Border BorderThickness="1" BorderBrush="Red" Margin="10,10,10,0" Height="167" VerticalAlignment="Top">

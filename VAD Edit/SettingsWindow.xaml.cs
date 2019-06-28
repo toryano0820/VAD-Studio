@@ -16,8 +16,9 @@ namespace VADEdit
             txtMaxSilence.Text = Settings.MaxSilence.ToString();
             txtMinLength.Text = Settings.MinLength.ToString();
             txtMinVolume.Text = Settings.MinVolume.ToString();
-
             cmbLanguage.Text = Settings.LanguageCode;
+            chkIncludeSttResult.IsChecked = Settings.IncludeSttResult;
+            chkIncludeAudioFileSize.IsChecked = Settings.IncludeAudioFileSize;
 
             txtMaxSilence.PreviewTextInput += (o, e) =>
             {
@@ -62,16 +63,27 @@ namespace VADEdit
         public static new void Show()
         {
             var win = new SettingsWindow();
-            win.ShowDialog();
 
-            Settings.MaxSilence = int.Parse(win.txtMaxSilence.Text);
-            Settings.MinLength = int.Parse(win.txtMinLength.Text);
-            Settings.MinVolume = float.Parse(win.txtMinVolume.Text);
+            if (win.ShowDialog() == true)
+            {
+                Settings.MaxSilence = int.Parse(win.txtMaxSilence.Text);
+                Settings.MinLength = int.Parse(win.txtMinLength.Text);
+                Settings.MinVolume = float.Parse(win.txtMinVolume.Text);
+                Settings.LanguageCode = win.cmbLanguage.Text;
+                Settings.IncludeSttResult = win.chkIncludeSttResult.IsChecked.Value;
+                Settings.IncludeAudioFileSize = win.chkIncludeAudioFileSize.IsChecked.Value;
 
-            Settings.LanguageCode = win.cmbLanguage.Text;
+                Settings.Save();
+            }
         }
 
         private void OK_Click(object sender, RoutedEventArgs e)
+        {
+            DialogResult = true;
+            Close();
+        }
+
+        private void Cancel_Click(object sender, RoutedEventArgs e)
         {
             Close();
         }

@@ -79,12 +79,13 @@ namespace VADEdit
             txtWait.Text = "Loading WAV... Please wait...";
             grdWait.Visibility = Visibility.Visible;
             grdMain.IsEnabled = false;
+            btnSplit.IsEnabled = true;
             GC.Collect();
-            //await waveView.SetWaveStreamAsync(new NAudio.Wave.WaveFileReader(dlg.FileName));
+
             waveView.SetWaveStream(new NAudio.Wave.WaveFileReader(filePath), (success) =>
             {
                 btnExportAll.IsEnabled = false;
-                btnSTTAll.IsEnabled = false;
+                btnSttAll.IsEnabled = false;
 
                 if (success)
                 {
@@ -94,19 +95,20 @@ namespace VADEdit
 
                     btnPause.IsEnabled = true;
                     btnPlay.IsEnabled = true;
-                    btnSplit.IsEnabled = true;
                     txtChunkLocation.IsEnabled = true;
                     waveStream = waveView.WaveStream;
                 }
                 else
                 {
                     txtChunkLocation.Text = null;
-                    fileName = null;
+                    streamFileName = null;
                     SetTitle();
 
                     btnPause.IsEnabled = false;
                     btnPlay.IsEnabled = false;
                     btnSplit.IsEnabled = false;
+                    btnSttAll.IsEnabled = false;
+                    btnExportAll.IsEnabled = false;
                     txtChunkLocation.IsEnabled = false;
                 }
 
@@ -240,7 +242,7 @@ namespace VADEdit
                             {
                                 Dispatcher.Invoke(() =>
                                 {
-                                    AddItemView(start, end);
+                                    AddItemView(new TimeRange(TimeSpan.FromMilliseconds(start), TimeSpan.FromMilliseconds(end)));
                                 });
                             }
 
@@ -260,7 +262,7 @@ namespace VADEdit
                                     {
                                         Dispatcher.Invoke(() =>
                                         {
-                                            AddItemView(start, end);
+                                            AddItemView(new TimeRange(TimeSpan.FromMilliseconds(start), TimeSpan.FromMilliseconds(end)));
                                         });
                                     }
                                 }
@@ -299,7 +301,7 @@ namespace VADEdit
                     if (grdTime.Children.OfType<AudioChunkView>().Count() > 0)
                     {
                         btnExportAll.IsEnabled = true;
-                        btnSTTAll.IsEnabled = true;
+                        btnSttAll.IsEnabled = true;
                     }
                     grdMain.IsEnabled = true;
                     grdWait.Visibility = Visibility.Hidden;
@@ -322,7 +324,7 @@ namespace VADEdit
             }
         }
 
-        private void DoSTT(AudioChunkView chunkView, bool suppressErrorDialogs = false, Action finishedCallback = null)
+        private void DoStt(AudioChunkView chunkView, bool suppressErrorDialogs = false, Action finishedCallback = null)
         {
             var startSecond = Dispatcher.Invoke(() => chunkView.TimeRange.Start.TotalSeconds);
             var endSecond = Dispatcher.Invoke(() => chunkView.TimeRange.End.TotalSeconds);
@@ -419,7 +421,7 @@ namespace VADEdit
                                     {
                                         Dispatcher.Invoke(() =>
                                         {
-                                            chunkView.SpeechText = alternative.Transcript;
+                                            chunkView.GSttText = alternative.Transcript;
                                         });
                                         break;
                                     }
@@ -457,6 +459,8 @@ namespace VADEdit
         {
             var chunkLocation = Dispatcher.Invoke(() => txtChunkLocation.Text);
             var speechText = Dispatcher.Invoke(() => chunkView.SpeechText);
+            var gSttText = Dispatcher.Invoke(() => chunkView.GSttText);
+
             if (!string.IsNullOrWhiteSpace(speechText))
             {
                 waveView.Pause();
@@ -505,11 +509,21 @@ namespace VADEdit
                 }
                 waveStream.Position = oldPos;
 
-                File.AppendAllText(System.IO.Path.Combine(chunkLocation, "sentence_map.csv"), $"{savePath.Replace(@"\", "/").Split('/').Last()},\"{speechText}\"\n");
+                var line = $"{savePath.Replace(@"\", "/").Split('/').Last()},";
+
+                if (Settings.IncludeAudioFileSize)
+                    line += $"{new FileInfo(savePath).Length},";
+
+                if (Settings.IncludeSttResult)
+                    line += $"\"{gSttText}\",";
+
+                line += $"\"{speechText}\"\n";
+
+                File.AppendAllText(System.IO.Path.Combine(chunkLocation, "sentence_map.csv"), line);
 
                 Dispatcher.Invoke(() =>
                 {
-                    grdTime.Children.Remove(chunkView);
+                    //grdTime.Children.Remove(chunkView);
                     txtCount.Text = $"Count: {grdTime.Children.Count}";
 
                     if (!suppressErrorDialogs)
@@ -527,15 +541,13 @@ namespace VADEdit
             }
         }
 
-        private void AddItemView(double msStart, double msEnd)
+        private void AddItemView(TimeRange timeRange, string gSttText = null, string speechText = null, int insertIndex = -1)
         {
             var chunkView = new AudioChunkView()
             {
-                TimeRange = new TimeRange()
-                {
-                    Start = TimeSpan.FromMilliseconds(msStart),
-                    End = TimeSpan.FromMilliseconds(msEnd)
-                }
+                TimeRange = timeRange,
+                GSttText = gSttText,
+                SpeechText = speechText
             };
 
             chunkView.PlayButtonClicked += delegate
@@ -576,11 +588,19 @@ namespace VADEdit
                 grdWait.Visibility = Visibility.Visible;
                 grdMain.IsEnabled = false;
 
-                DoSTT(chunkView, finishedCallback: () =>
+                new Thread(() =>
                 {
-                    grdMain.IsEnabled = true;
-                    grdWait.Visibility = Visibility.Hidden;
-                });
+                    DoStt(chunkView, finishedCallback: () =>
+                    {
+                        grdMain.IsEnabled = true;
+                        grdWait.Visibility = Visibility.Hidden;
+                    });
+                }).Start();
+            };
+
+            chunkView.DuplicateButtonClicked += delegate
+            {
+                AddItemView(chunkView.TimeRange, chunkView.GSttText, chunkView.SpeechText, grdTime.Children.IndexOf(chunkView) + 1);
             };
 
             chunkView.ExportButtonClicked += delegate
@@ -591,11 +611,22 @@ namespace VADEdit
             chunkView.DeleteButtonClicked += delegate
             {
                 ShowSelection(new TimeRange(TimeSpan.Zero, TimeSpan.Zero), false);
+                var index = grdTime.Children.IndexOf(chunkView);
                 grdTime.Children.Remove(chunkView);
+                if (grdTime.Children.Count > 0)
+                    (grdTime.Children[index == grdTime.Children.Count ? index - 1 : index] as AudioChunkView)?.Select();
+                else
+                {
+                    btnExportAll.IsEnabled = false;
+                    btnSttAll.IsEnabled = false;
+                }
                 txtCount.Text = $"Count: {grdTime.Children.Count}";
             };
 
-            grdTime.Children.Add(chunkView);
+            if (insertIndex == -1)
+                grdTime.Children.Add(chunkView);
+            else
+                grdTime.Children.Insert(insertIndex, chunkView);
 
             txtCount.Text = $"Count: {grdTime.Children.Count}";
         }
@@ -615,8 +646,9 @@ namespace VADEdit
 
         private void Split_Click(object sender, RoutedEventArgs e)
         {
+            if (grdTime.Children.Count > 0 && MessageBox.Show("Existing chunks will be overwritten.\nContinue?", "Operation Confirmation", MessageBoxButton.YesNo, MessageBoxImage.Question) == MessageBoxResult.No)
+                return;
             SplitSilence();
-            btnSplit.IsEnabled = false;
         }
 
         private void Pause_Click(object sender, RoutedEventArgs e)
@@ -630,7 +662,7 @@ namespace VADEdit
         }
 
 
-        private void STTAll_Click(object sender, RoutedEventArgs e)
+        private void SttAll_Click(object sender, RoutedEventArgs e)
         {
             var chunkViews = grdTime.Children.OfType<AudioChunkView>().Where(c => string.IsNullOrWhiteSpace(c.SpeechText)).ToArray();
 
@@ -654,7 +686,7 @@ namespace VADEdit
                     {
                         if (ctr++ == chunkViews.Count() - 1)
                         {
-                            DoSTT(chunkView, true, () =>
+                            DoStt(chunkView, true, () =>
                             {
                                 grdMain.IsEnabled = true;
                                 grdWait.Visibility = Visibility.Hidden;
@@ -662,7 +694,7 @@ namespace VADEdit
                         }
                         else
                         {
-                            DoSTT(chunkView, true);
+                            DoStt(chunkView, true);
                         }
                     }
                 }).Start();
@@ -672,6 +704,7 @@ namespace VADEdit
         private void ExportAll_Click(object sender, RoutedEventArgs e)
         {
             var chunkViews = grdTime.Children.OfType<AudioChunkView>().Where(c => !string.IsNullOrWhiteSpace(c.SpeechText)).ToArray();
+
             if (chunkViews.Count() == 0)
             {
                 MessageBox.Show("No chunks has been given text value.", "Data Warning", MessageBoxButton.OK, MessageBoxImage.Warning);

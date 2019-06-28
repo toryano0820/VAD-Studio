@@ -5,7 +5,7 @@
         xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
         xmlns:local="clr-namespace:VADEdit"
         mc:Ignorable="d"
-        Title="Options" Height="306.25" Width="285.831" WindowStyle="ToolWindow" WindowStartupLocation="CenterOwner" ResizeMode="NoResize" ShowInTaskbar="False">
+        Title="Options" Height="365.405" Width="285.831" WindowStyle="ToolWindow" WindowStartupLocation="CenterOwner" ResizeMode="NoResize" ShowInTaskbar="False">
     <Grid>
         <GroupBox Header="Split Options" Margin="10,10,10,0" Height="auto" VerticalAlignment="Top">
             <Grid Margin="5">
@@ -36,6 +36,13 @@
                 </ComboBox>
             </Grid>
         </GroupBox>
-        <Button Content="OK" HorizontalAlignment="Right" Margin="0,0,20,20" VerticalAlignment="Bottom" Width="75" Height="25" IsDefault="True" Click="OK_Click"/>
+        <GroupBox Header="Output Options" Margin="10,203,10,0" Height="auto" VerticalAlignment="Top">
+            <Grid Margin="5">
+                <CheckBox Name="chkIncludeSttResult" Content="Include audio file size" VerticalAlignment="Top"/>
+                <CheckBox Name="chkIncludeAudioFileSize" Content="Include STT result" VerticalAlignment="Top" Margin="0,20,0,0"/>
+            </Grid>
+        </GroupBox>
+        <Button Content="OK" HorizontalAlignment="Right" Margin="0,0,101,20" VerticalAlignment="Bottom" Width="75" Height="25" IsDefault="True" Click="OK_Click"/>
+        <Button Content="Cancel" HorizontalAlignment="Right" Margin="0,0,20,20" VerticalAlignment="Bottom" Width="76" Height="25" IsCancel="True" Click="Cancel_Click"/>
     </Grid>
 </Window>

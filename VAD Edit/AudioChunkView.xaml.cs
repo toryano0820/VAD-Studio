@@ -24,6 +24,7 @@ namespace VADEdit
         private static event EventHandler StaticFocused;
         public event EventHandler PlayButtonClicked;
         public event EventHandler SttButtonClicked;
+        public event EventHandler DuplicateButtonClicked;
         public event EventHandler ExportButtonClicked;
         public event EventHandler DeleteButtonClicked;
         public event EventHandler StopButtonClicked;
@@ -63,15 +64,20 @@ namespace VADEdit
             DependencyProperty.Register("SpeechText", typeof(string), typeof(AudioChunkView), new PropertyMetadata(null));
 
 
-        public bool IsChecked
+        public string GSttText
         {
-            get { return (bool)GetValue(IsCheckedProperty); }
-            set { SetValue(IsCheckedProperty, value); }
+            get { return (string)GetValue(GSttTextProperty); }
+            set { SetValue(GSttTextProperty, value); }
         }
 
-        // Using a DependencyProperty as the backing store for IsChecked.  This enables animation, styling, binding, etc...
-        public static readonly DependencyProperty IsCheckedProperty =
-            DependencyProperty.Register("IsChecked", typeof(bool), typeof(AudioChunkView), new PropertyMetadata(false));
+        // Using a DependencyProperty as the backing store for GSttText.  This enables animation, styling, binding, etc...
+        public static readonly DependencyProperty GSttTextProperty =
+            DependencyProperty.Register("GSttText", typeof(string), typeof(AudioChunkView), new PropertyMetadata(null, (o, e) =>
+            {
+                var @this = o as AudioChunkView;
+                @this.SpeechText = e.NewValue as string;
+            }));
+
 
         public AudioChunkView()
         {
@@ -90,6 +96,11 @@ namespace VADEdit
         private void btnStt_Click(object sender, RoutedEventArgs e)
         {
             SttButtonClicked?.Invoke(this, e);
+        }
+
+        private void btnDuplicate_Click(object sender, RoutedEventArgs e)
+        {
+            DuplicateButtonClicked?.Invoke(this, e);
         }
 
         private void btnExport_Click(object sender, RoutedEventArgs e)
@@ -131,6 +142,11 @@ namespace VADEdit
         private void txtTime_PreviewMouseLeftButtonDown(object sender, MouseButtonEventArgs e)
         {
             e.Handled = true;
+        }
+
+        public void Select()
+        {
+            Keyboard.Focus(txtSpeech);
         }
     }
 

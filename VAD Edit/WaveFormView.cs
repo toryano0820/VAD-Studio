@@ -202,6 +202,10 @@ namespace VADEdit
             {
                 try
                 {
+                    if (waveStream.WaveFormat.Channels != 1 || waveStream.WaveFormat.SampleRate != 16000)
+                    {
+                        throw new FileFormatException("Input should be 16kHz Mono WAV file.");
+                    }
                     var wave = new WaveChannel32(waveStream);
 
                     if (wave == null)
