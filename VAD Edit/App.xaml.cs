@@ -16,7 +16,7 @@ namespace VADEdit
     {
         static App()
         {
-            Environment.SetEnvironmentVariable("GOOGLE_APPLICATION_CREDENTIALS", System.IO.Path.Combine(AppDomain.CurrentDomain.BaseDirectory, "service_account.json"),  EnvironmentVariableTarget.Process);
+            Settings.Save();
         }
     }
 }

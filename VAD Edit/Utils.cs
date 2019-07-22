@@ -1,15 +1,14 @@
 ﻿using System;
 using System.Collections.Generic;
-using System.IO;
-using System.Linq;
+using System.Globalization;
 using System.Net;
-using System.Net.NetworkInformation;
 using System.Reflection;
 using System.Runtime.InteropServices;
-using System.Text;
-using System.Threading.Tasks;
 using System.Windows;
+using System.Windows.Data;
 using System.Windows.Interop;
+using System.Windows.Media;
+using System.Windows.Media.Effects;
 
 namespace VADEdit
 {
@@ -142,3 +141,160 @@ namespace VADEdit
         #endregion
     }
 }
+
+#region IValueConverters
+namespace VADEdit.Converters
+{
+    public class NegateVisibility : IValueConverter
+    {
+        public object Convert(object value, Type targetType, object parameter, CultureInfo culture)
+        {
+            return ((Visibility)value == Visibility.Visible) ? Visibility.Hidden : Visibility.Visible;
+        }
+
+        public object ConvertBack(object value, Type targetType, object parameter, CultureInfo culture)
+        {
+            throw new NotImplementedException();
+        }
+    }
+
+    public class FlippedIconColumnValueConverter : IValueConverter
+    {
+        public object Convert(object value, Type targetType, object parameter, CultureInfo culture)
+        {
+            return ((bool)value) ? 1 : 0;
+        }
+
+        public object ConvertBack(object value, Type targetType, object parameter, CultureInfo culture)
+        {
+            throw new NotImplementedException();
+        }
+    }
+
+    public class FlippedContentColumnValueConverter : IValueConverter
+    {
+        public object Convert(object value, Type targetType, object parameter, CultureInfo culture)
+        {
+            return ((bool)value) ? 0 : 1;
+        }
+
+        public object ConvertBack(object value, Type targetType, object parameter, CultureInfo culture)
+        {
+            throw new NotImplementedException();
+        }
+    }
+
+    public class FlippedColumn0WidthValueConverter : IMultiValueConverter
+    {
+        public object Convert(object[] values, Type targetType, object parameter, CultureInfo culture)
+        {
+            var flipped = (bool)values[0];
+            var icon = (ImageSource)values[1];
+            var content = values[2];
+
+            if (flipped)
+                return new GridLength(1, (content == null) ? GridUnitType.Auto : GridUnitType.Star);
+            else
+                return new GridLength(1, (content != null) ? GridUnitType.Auto : GridUnitType.Star);
+        }
+
+        public object[] ConvertBack(object value, Type[] targetTypes, object parameter, CultureInfo culture)
+        {
+            throw new NotImplementedException();
+        }
+    }
+
+    public class FlippedColumn1WidthValueConverter : IMultiValueConverter
+    {
+        public object Convert(object[] values, Type targetType, object parameter, CultureInfo culture)
+        {
+            var flipped = (bool)values[0];
+            var icon = (ImageSource)values[1];
+            var content = values[2];
+
+            if (flipped)
+                return new GridLength(1, (content != null) ? GridUnitType.Auto : GridUnitType.Star);
+            else
+                return new GridLength(1, (content == null) ? GridUnitType.Auto : GridUnitType.Star);
+        }
+
+        public object[] ConvertBack(object value, Type[] targetType, object parameter, CultureInfo culture)
+        {
+            throw new NotImplementedException();
+        }
+    }
+
+    public class ImageButtonContentNullToMarginValueConverter : IValueConverter
+    {
+        public object Convert(object value, Type targetType, object parameter, CultureInfo culture)
+        {
+            return new Thickness((value == null) ? 0 : 5);
+        }
+
+        public object ConvertBack(object value, Type targetType, object parameter, CultureInfo culture)
+        {
+            throw new NotImplementedException();
+        }
+    }
+
+    public class BorderClipConverter : IMultiValueConverter
+    {
+        public object Convert(object[] values, Type targetType, object parameter, CultureInfo culture)
+        {
+            if (values.Length == 3 && values[0] is double && values[1] is double && values[2] is CornerRadius)
+            {
+                var width = (double)values[0];
+                var height = (double)values[1];
+
+                if (width < Double.Epsilon || height < Double.Epsilon)
+                {
+                    return Geometry.Empty;
+                }
+
+                var radius = (CornerRadius)values[2];
+
+                var clip = new RectangleGeometry(new Rect(0, 0, width, height), radius.TopLeft, radius.TopLeft);
+                clip.Freeze();
+
+                return clip;
+            }
+
+            return DependencyProperty.UnsetValue;
+        }
+
+        public object[] ConvertBack(object value, Type[] targetTypes, object parameter, CultureInfo culture)
+        {
+            throw new NotSupportedException();
+        }
+    }
+
+    public class PropertiesToEffectValueConverter : IMultiValueConverter
+    {
+        public object Convert(object[] values, Type targetType, object parameter, CultureInfo culture)
+        {
+            var pressed = (bool)values[0];
+            var checked_ = (bool)values[1];
+            var enabled = (bool)values[2];
+
+            var idleEffect = (Effect)values[3];
+            var pressedEffect = (Effect)values[4];
+            var checkedEffect = (Effect)values[5];
+            var disabledEffect = (Effect)values[6];
+
+            if (!enabled)
+                return disabledEffect;
+            else if (pressed)
+                return pressedEffect;
+            else if (checked_)
+                return checkedEffect;
+            else
+                return idleEffect;
+        }
+
+        public object[] ConvertBack(object value, Type[] targetTypes, object parameter, CultureInfo culture)
+        {
+            throw new NotImplementedException();
+        }
+    }
+}
+#endregion

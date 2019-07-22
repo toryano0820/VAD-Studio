@@ -24,6 +24,7 @@ namespace VADEdit
         private SpeechClient speechClient = null;
         private WaveStream waveStream = null;
         private string streamFileName = null;
+        private bool closing = false;
 
         public MainWindow()
         {
@@ -326,6 +327,11 @@ namespace VADEdit
 
         private void DoStt(AudioChunkView chunkView, bool suppressErrorDialogs = false, Action finishedCallback = null)
         {
+            Dispatcher.Invoke(() =>
+            {
+                chunkView.BringIntoView();
+            });
+
             var startSecond = Dispatcher.Invoke(() => chunkView.TimeRange.Start.TotalSeconds);
             var endSecond = Dispatcher.Invoke(() => chunkView.TimeRange.End.TotalSeconds);
 
@@ -457,6 +463,11 @@ namespace VADEdit
 
         private void DoExport(AudioChunkView chunkView, bool suppressErrorDialogs = false)
         {
+            Dispatcher.Invoke(() =>
+            {
+                chunkView.BringIntoView();
+            });
+
             var chunkLocation = Dispatcher.Invoke(() => txtChunkLocation.Text);
             var speechText = Dispatcher.Invoke(() => chunkView.SpeechText);
             var gSttText = Dispatcher.Invoke(() => chunkView.GSttText);
@@ -684,6 +695,9 @@ namespace VADEdit
                     int ctr = 0;
                     foreach (var chunkView in chunkViews)
                     {
+                        if (closing)
+                            break;
+
                         if (ctr++ == chunkViews.Count() - 1)
                         {
                             DoStt(chunkView, true, () =>
@@ -696,6 +710,7 @@ namespace VADEdit
                         {
                             DoStt(chunkView, true);
                         }
+                        Thread.Sleep(100);
                     }
                 }).Start();
             }
@@ -720,7 +735,11 @@ namespace VADEdit
                 {
                     foreach (var chunkView in chunkViews)
                     {
+                        if (closing)
+                            break;
+
                         DoExport(chunkView, true);
+                        Thread.Sleep(100);
                     }
 
                     Dispatcher.Invoke(() =>
@@ -762,7 +781,14 @@ namespace VADEdit
                 e.Cancel = true;
             }
 
+            closing = true;
+
             base.OnClosing(e);
+        }
+
+        private void btnCancelLongProcess_Click(object sender, RoutedEventArgs e)
+        {
+            //MessageBox.Show("");
         }
     }
 

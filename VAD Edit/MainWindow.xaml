@@ -22,7 +22,7 @@
             <local:WaveFormView x:Name="waveView" PlayRangeEnded="waveView_PlayRangeEnded" ClipToBounds="True"/>
         </Border>
         <Border BorderThickness="1" BorderBrush="Gray" Margin="10,228,10,35">
-            <ScrollViewer HorizontalScrollBarVisibility="Disabled" VerticalScrollBarVisibility="Auto">
+            <ScrollViewer Name="chunkScroller" HorizontalScrollBarVisibility="Disabled" VerticalScrollBarVisibility="Auto">
                 <StackPanel Name="grdTime" />
             </ScrollViewer>
         </Border>
@@ -31,8 +31,15 @@
         </StatusBar>
         <TextBlock HorizontalAlignment="Left" Margin="359,181,0,0" TextWrapping="Wrap" Text="Chunk Save Location" VerticalAlignment="Top"/>
         <TextBox Name="txtChunkLocation" Height="25" Margin="359,197,356,0" TextWrapping="NoWrap" VerticalAlignment="Top" VerticalContentAlignment="Center" IsEnabled="False" IsReadOnly="True" ToolTip="{Binding Text, RelativeSource={RelativeSource Self}}"/>
-        <Grid Name="grdWait" Background="#DD000000" Visibility="Hidden">
-            <TextBlock Name="txtWait" Text="Please wait..." VerticalAlignment="Center" HorizontalAlignment="Center" Foreground="White" FontSize="20"/>
+        <Grid Name="grdWait" Background="#DD000000" Visibility="Visible">
+            <Grid  VerticalAlignment="Center" HorizontalAlignment="Center">
+                <Grid.RowDefinitions>
+                    <RowDefinition />
+                    <RowDefinition />
+                </Grid.RowDefinitions>
+                <TextBlock Name="txtWait" Text="Please wait..." VerticalAlignment="Center" HorizontalAlignment="Center" Foreground="White" FontSize="20"/>
+                <local:ImageButton Grid.Row="2" Content="CANCEL" Height="50" Width="150" CornerRadius="10" Background="#22000000" PressedBackground="#66000000" Foreground="#22FFFFFF" MouseOverForeground="White" PressedForeground="White" Margin="0,5,0,0" Click="btnCancelLongProcess_Click"/>
+            </Grid>
         </Grid>
     </Grid>
 </Window>
