@@ -763,8 +763,6 @@ namespace VADEdit
             if (IsMouseOver && e is MouseButtonEventArgs)
                 IsMouseOverInternal = true;
 
-            Console.WriteLine(e);
-
             IsPressedInternal = false;
             e.Handled = true;
         }

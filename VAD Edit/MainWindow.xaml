@@ -7,38 +7,38 @@
         mc:Ignorable="d"
         Title="VAD Edit" MinHeight="600" MinWidth="1100" Height="600" Width="1100"
         WindowStartupLocation="CenterScreen" WindowState="Maximized" Background="White">
-    <Grid Name="grdMain">
-        <Button Content="Load" Height="41" VerticalAlignment="Top" HorizontalAlignment="Left" Width="70" Margin="10,182,0,0" Click="Load_Clicked"/>
-        <Button Height="41" VerticalAlignment="Top" HorizontalAlignment="Left" Width="70" Margin="85,182,0,0" Click="Convert_Click">
-            <TextBlock><Run Text="Convert"/><LineBreak/><Run Text="&amp; Load"/></TextBlock>
-        </Button>
-        <Button Name="btnPlay" Content="Play" Height="41" VerticalAlignment="Top" HorizontalAlignment="Left" Width="70" Margin="185,182,0,0" Click="Play_Clicked" IsEnabled="False"/>
-        <Button Name="btnPause" Content="Pause" Height="41" VerticalAlignment="Top" HorizontalAlignment="Left" Width="70" Margin="260,182,0,0" Click="Pause_Click" IsEnabled="False"/>
-        <Button Name="btnSplit" Content="Split" Height="41" VerticalAlignment="Top" HorizontalAlignment="Right" Width="70" Margin="0,182,257,0" Click="Split_Click" IsEnabled="False"/>
-        <Button Name="btnSttAll" Content="STT All" Height="41" VerticalAlignment="Top" ToolTip="Only chunks without text value will be processed" Margin="0,182,182,0" Click="SttAll_Click" HorizontalAlignment="Right" Width="70" IsEnabled="False"/>
-        <Button Name="btnExportAll" Content="Export All" Height="41" VerticalAlignment="Top" ToolTip="Only chunks with text value will be processed" Margin="0,182,107,0" Click="ExportAll_Click" HorizontalAlignment="Right" Width="70" IsEnabled="False"/>
-        <Button x:Name="btnOptions" Content="Options" Height="41" VerticalAlignment="Top" Margin="0,182,10,0" Click="Options_Click" HorizontalAlignment="Right" Width="70"/>
-        <Border BorderThickness="1" BorderBrush="Red" Margin="10,10,10,0" Height="167" VerticalAlignment="Top">
-            <local:WaveFormView x:Name="waveView" PlayRangeEnded="waveView_PlayRangeEnded" ClipToBounds="True"/>
-        </Border>
-        <Border BorderThickness="1" BorderBrush="Gray" Margin="10,228,10,35">
-            <ScrollViewer Name="chunkScroller" HorizontalScrollBarVisibility="Disabled" VerticalScrollBarVisibility="Auto">
-                <StackPanel Name="grdTime" />
-            </ScrollViewer>
-        </Border>
-        <StatusBar Height="30" VerticalAlignment="Bottom">
-            <TextBlock Name="txtCount" Text="Count: 0" Margin="10,0"/>
-        </StatusBar>
-        <TextBlock HorizontalAlignment="Left" Margin="359,181,0,0" TextWrapping="Wrap" Text="Chunk Save Location" VerticalAlignment="Top"/>
-        <TextBox Name="txtChunkLocation" Height="25" Margin="359,197,356,0" TextWrapping="NoWrap" VerticalAlignment="Top" VerticalContentAlignment="Center" IsEnabled="False" IsReadOnly="True" ToolTip="{Binding Text, RelativeSource={RelativeSource Self}}"/>
-        <Grid Name="grdWait" Background="#DD000000" Visibility="Visible">
+    <Grid>
+        <Grid Name="grdMain">
+            <Button Content="Load" Height="41" VerticalAlignment="Top" HorizontalAlignment="Left" Width="70" Margin="10,182,0,0" Click="Load_Clicked"/>
+            <Button xml:space="preserve" Height="41" Content="Convert&#10;&amp; Load" VerticalAlignment="Top" HorizontalAlignment="Left" Width="70" Margin="85,182,0,0" Click="Convert_Click" />
+            <Button Name="btnPlay" Content="Play" Height="41" VerticalAlignment="Top" HorizontalAlignment="Left" Width="70" Margin="185,182,0,0" Click="Play_Clicked" IsEnabled="False"/>
+            <Button Name="btnPause" Content="Pause" Height="41" VerticalAlignment="Top" HorizontalAlignment="Left" Width="70" Margin="260,182,0,0" Click="Pause_Click" IsEnabled="False"/>
+            <Button Name="btnSplit" Content="Split" Height="41" VerticalAlignment="Top" HorizontalAlignment="Right" Width="70" Margin="0,182,257,0" Click="Split_Click" IsEnabled="False"/>
+            <Button Name="btnSttAll" Content="STT Batch" Height="41" VerticalAlignment="Top" ToolTip="Only chunks without text value will be processed" Margin="0,182,182,0" Click="SttAll_Click" HorizontalAlignment="Right" Width="70" IsEnabled="False"/>
+            <Button xml:space="preserve" Name="btnExportAll" Content="Export&#10;Batch" Height="41" VerticalAlignment="Top" ToolTip="Only chunks with text value will be processed" Margin="0,182,107,0" Click="ExportAll_Click" HorizontalAlignment="Right" Width="70" IsEnabled="False"/>
+            <Button x:Name="btnOptions" Content="Options" Height="41" VerticalAlignment="Top" Margin="0,182,10,0" Click="Options_Click" HorizontalAlignment="Right" Width="70"/>
+            <Border BorderThickness="1" BorderBrush="Red" Margin="10,10,10,0" Height="167" VerticalAlignment="Top">
+                <local:WaveFormView x:Name="waveView" PlayRangeEnded="waveView_PlayRangeEnded" ClipToBounds="True"/>
+            </Border>
+            <Border BorderThickness="1" BorderBrush="Gray" Margin="10,228,10,35">
+                <ScrollViewer Name="chunkScroller" HorizontalScrollBarVisibility="Disabled" VerticalScrollBarVisibility="Auto">
+                    <StackPanel Name="grdTime" />
+                </ScrollViewer>
+            </Border>
+            <StatusBar Height="30" VerticalAlignment="Bottom">
+                <TextBlock Name="txtCount" Text="Count: 0" Margin="10,0"/>
+            </StatusBar>
+            <TextBlock HorizontalAlignment="Left" Margin="359,181,0,0" TextWrapping="Wrap" Text="Chunk Save Location" VerticalAlignment="Top"/>
+            <TextBox Name="txtChunkLocation" Height="25" Margin="359,197,356,0" TextWrapping="NoWrap" VerticalAlignment="Top" VerticalContentAlignment="Center" IsEnabled="False" IsReadOnly="True" ToolTip="{Binding Text, RelativeSource={RelativeSource Self}}"/>
+        </Grid>
+        <Grid Name="grdWait" Background="#DD000000" Visibility="Hidden">
             <Grid  VerticalAlignment="Center" HorizontalAlignment="Center">
                 <Grid.RowDefinitions>
                     <RowDefinition />
                     <RowDefinition />
                 </Grid.RowDefinitions>
                 <TextBlock Name="txtWait" Text="Please wait..." VerticalAlignment="Center" HorizontalAlignment="Center" Foreground="White" FontSize="20"/>
-                <local:ImageButton Grid.Row="2" Content="CANCEL" Height="50" Width="150" CornerRadius="10" Background="#22000000" PressedBackground="#66000000" Foreground="#22FFFFFF" MouseOverForeground="White" PressedForeground="White" Margin="0,5,0,0" Click="btnCancelLongProcess_Click"/>
+                <local:ImageButton x:Name="btnCancel" Grid.Row="2" Content="CANCEL" Height="50" Width="150" CornerRadius="10" Background="#22000000" PressedBackground="#66000000" Foreground="#22FFFFFF" MouseOverForeground="White" PressedForeground="White" Margin="0,5,0,0" Click="btnCancelLongProcess_Click"/>
             </Grid>
         </Grid>
     </Grid>

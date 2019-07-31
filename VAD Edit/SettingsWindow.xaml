@@ -7,62 +7,55 @@
         xmlns:conv="clr-namespace:VADEdit.Converters"
         xmlns:sys="clr-namespace:System;assembly=mscorlib"
         mc:Ignorable="d"
-        Title="Options" Height="383.786" Width="431.831" WindowStyle="ToolWindow" WindowStartupLocation="CenterOwner" ResizeMode="NoResize" ShowInTaskbar="False">
+        SizeToContent="Height"
+        Title="Options" Width="431.831" WindowStyle="ToolWindow" WindowStartupLocation="CenterOwner" ResizeMode="NoResize" ShowInTaskbar="False">
     <Window.Resources>
-        <GridLength x:Key="labelWidth">120</GridLength>
+        <sys:Double x:Key="labelWidth">120</sys:Double>
+        <local:FalseToCollapsed x:Key="showOnCheck"/>
+        <local:TrueToCollapsed x:Key="hideOnCheck"/>
     </Window.Resources>
-    <Grid>
-        <GroupBox Header="Split Options" Margin="10,10,10,0" Height="auto" VerticalAlignment="Top">
-            <Grid Margin="5">
-                <Grid.ColumnDefinitions>
-                    <ColumnDefinition Width="{StaticResource labelWidth}"/>
-                    <ColumnDefinition />
-                </Grid.ColumnDefinitions>
-                <Grid.RowDefinitions>
-                    <RowDefinition />
-                    <RowDefinition Height="5" />
-                    <RowDefinition />
-                    <RowDefinition Height="5" />
-                    <RowDefinition />
-                </Grid.RowDefinitions>
-                <TextBlock Grid.Column="0" Text="Min Length (ms)" VerticalAlignment="Top" HorizontalAlignment="Left"/>
-                <TextBox Grid.Column="1" x:Name="txtMinLength" Text="1000" VerticalContentAlignment="Center" HorizontalContentAlignment="Center" Height="25" VerticalAlignment="Top" HorizontalAlignment="Stretch"/>
-                <TextBlock Grid.Row="2" Grid.Column="0" Text="Min Volume (%)" VerticalAlignment="Top" HorizontalAlignment="Left"/>
-                <TextBox Grid.Row="2" Grid.Column="1" x:Name="txtMinVolume" Text="5" VerticalContentAlignment="Center" HorizontalContentAlignment="Center" Height="25" VerticalAlignment="Top" HorizontalAlignment="Stretch"/>
-                <TextBlock Grid.Row="4" Grid.Column="0" Text="Max Silence (ms)" VerticalAlignment="Top" HorizontalAlignment="Left"/>
-                <TextBox Grid.Row="4" Grid.Column="1" x:Name="txtMaxSilence" Text="300" VerticalContentAlignment="Center" HorizontalContentAlignment="Center" Height="25" VerticalAlignment="Top"/>
-            </Grid>
+    <StackPanel Height="auto" VerticalAlignment="Top">
+        <GroupBox Header="Split Options" Margin="10,0" Height="auto" VerticalAlignment="Top">
+            <StackPanel Margin="5">
+                <CheckBox Name="chkSplitOnSilence" Margin="0,5,0,0" Content="Split on Silence" VerticalAlignment="Top" IsChecked="True"/>
+                <TextBlock Visibility="{Binding IsChecked,ElementName=chkSplitOnSilence, Converter={StaticResource hideOnCheck}}" Margin="0,5,0,0" Text="Split Length (ms)" VerticalAlignment="Top" HorizontalAlignment="Left"/>
+                <TextBox Visibility="{Binding IsChecked,ElementName=chkSplitOnSilence, Converter={StaticResource hideOnCheck}}" x:Name="txtSplitLength" VerticalContentAlignment="Center" HorizontalContentAlignment="Center" Height="25" VerticalAlignment="Top" HorizontalAlignment="Stretch"/>
+                <TextBlock Visibility="{Binding IsChecked,ElementName=chkSplitOnSilence, Converter={StaticResource showOnCheck}}" Margin="0,5,0,0" Text="Min Length (ms)" VerticalAlignment="Top" HorizontalAlignment="Left"/>
+                <TextBox Visibility="{Binding IsChecked,ElementName=chkSplitOnSilence, Converter={StaticResource showOnCheck}}" x:Name="txtMinLength" VerticalContentAlignment="Center" HorizontalContentAlignment="Center" Height="25" VerticalAlignment="Top" HorizontalAlignment="Stretch"/>
+                <TextBlock Visibility="{Binding IsChecked,ElementName=chkSplitOnSilence, Converter={StaticResource showOnCheck}}" Margin="0,5,0,0" Text="Min Volume (%)" VerticalAlignment="Top" HorizontalAlignment="Left"/>
+                <TextBox Visibility="{Binding IsChecked,ElementName=chkSplitOnSilence, Converter={StaticResource showOnCheck}}" x:Name="txtMinVolume" VerticalContentAlignment="Center" HorizontalContentAlignment="Center" Height="25" VerticalAlignment="Top" HorizontalAlignment="Stretch"/>
+                <TextBlock Visibility="{Binding IsChecked,ElementName=chkSplitOnSilence, Converter={StaticResource showOnCheck}}" Margin="0,5,0,0" Text="Max Silence (ms)" VerticalAlignment="Top" HorizontalAlignment="Left"/>
+                <TextBox Visibility="{Binding IsChecked,ElementName=chkSplitOnSilence, Converter={StaticResource showOnCheck}}" x:Name="txtMaxSilence" VerticalContentAlignment="Center" HorizontalContentAlignment="Center" Height="25" VerticalAlignment="Top"/>
+                <TextBlock Margin="0,5,0,0" Text="Batch Size" VerticalAlignment="Top" HorizontalAlignment="Left"/>
+                <TextBox x:Name="txtBatchSize" VerticalContentAlignment="Center" HorizontalContentAlignment="Center" Height="25" VerticalAlignment="Top"/>
+            </StackPanel>
         </GroupBox>
-        <GroupBox Header="STT Options" Margin="10,133,10,0" Height="auto" VerticalAlignment="Top">
-            <Grid Margin="5">
-                <Grid.ColumnDefinitions>
-                    <ColumnDefinition Width="{StaticResource labelWidth}"/>
-                    <ColumnDefinition />
-                </Grid.ColumnDefinitions>
-                <Grid.RowDefinitions>
-                    <RowDefinition />
-                    <RowDefinition Height="5" />
-                    <RowDefinition />
-                </Grid.RowDefinitions>
-                <TextBlock Text="Credential Path" VerticalAlignment="Top" HorizontalAlignment="Left" Margin="0,4,0,0" />
-                <TextBox Name="txtSttCredentialPath" VerticalAlignment="Top" VerticalContentAlignment="Center" Height="25" Margin="0,0,29,0" Grid.Column="1"/>
-                <Button Name="btnSttCredentialPath" Grid.Column="1" Content="..." Padding="0,-9,0,0" VerticalAlignment="Top" HorizontalAlignment="Right" FontSize="18" Width="24" Height="25" Click="btnSttCredentialPath_Click"/>
-                <TextBlock Grid.Row="2" Text="Language Code" VerticalAlignment="Top" HorizontalAlignment="Left" Margin="0,4,0,0" />
-                <ComboBox Grid.Row="2" Grid.Column="1" x:Name="cmbLanguage" SelectedIndex="1" VerticalContentAlignment="Center" HorizontalContentAlignment="Center" Height="25" VerticalAlignment="Top" HorizontalAlignment="Stretch" Margin="0,0,0,0">
+        <GroupBox Header="STT Options" Margin="10,0" Height="auto" >
+            <StackPanel Margin="5">
+                <TextBlock Text="Credential Path" Margin="0,5,0,0" VerticalAlignment="Top" HorizontalAlignment="Left" />
+                <Grid>
+                    <TextBox Name="txtSttCredentialPath" VerticalAlignment="Top" VerticalContentAlignment="Center" Height="25" Margin="0,0,29,0"/>
+                    <Button Name="btnSttCredentialPath" Content="..." Padding="0,-9,0,0" VerticalAlignment="Top" HorizontalAlignment="Right" FontSize="18" Width="24" Height="25" Click="btnSttCredentialPath_Click"/>
+                </Grid>
+                <TextBlock Margin="0,10,0,0" Text="Language Code" VerticalAlignment="Top" HorizontalAlignment="Left" />
+                <ComboBox x:Name="cmbLanguage" VerticalContentAlignment="Center" HorizontalContentAlignment="Center" Height="25" VerticalAlignment="Top" HorizontalAlignment="Stretch" Margin="0,0,0,0">
                     <ComboBoxItem Content="en-US" />
                     <ComboBoxItem Content="fil-PH" />
                     <ComboBoxItem Content="th-TH" />
                     <ComboBoxItem Content="zh-TW" />
                 </ComboBox>
-            </Grid>
+            </StackPanel>
         </GroupBox>
-        <GroupBox Header="Output Options" Margin="10,221,10,0" Height="auto" VerticalAlignment="Top">
-            <Grid Margin="5">
-                <CheckBox Name="chkIncludeSttResult" Content="Include audio file size" VerticalAlignment="Top"/>
-                <CheckBox Name="chkIncludeAudioFileSize" Content="Include STT result" VerticalAlignment="Top" Margin="0,20,0,0"/>
-            </Grid>
+        <GroupBox Header="Output Options" Margin="10,0" Height="auto">
+            <StackPanel Margin="5">
+                <CheckBox Name="chkIncludeAudioFileSize" Margin="0,5,0,0" Content="Include STT result"/>
+                <CheckBox Name="chkIncludeAudioLengthMillis" Margin="0,5,0,0" Content="Include Audio Length (ms)"/>
+                <CheckBox Name="chkIncludeSttResult" Margin="0,5,0,0" Content="Include audio file size"/>
+            </StackPanel>
         </GroupBox>
-        <Button Content="OK" HorizontalAlignment="Right" Margin="0,0,101,20" VerticalAlignment="Bottom" Width="75" Height="25" IsDefault="True" Click="OK_Click"/>
-        <Button Content="Cancel" HorizontalAlignment="Right" Margin="0,0,20,20" VerticalAlignment="Bottom" Width="76" Height="25" IsCancel="True" Click="Cancel_Click"/>
-    </Grid>
+        <StackPanel Margin="20" Orientation="Horizontal" FlowDirection="RightToLeft">
+            <Button Content="Cancel" Width="76" Height="25" IsCancel="True" Click="Cancel_Click"/>
+            <Button Content="OK" Margin="8,0" Width="75" Height="25" IsDefault="True" Click="OK_Click"/>
+        </StackPanel>
+   </StackPanel>
 </Window>

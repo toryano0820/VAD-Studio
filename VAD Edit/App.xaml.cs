@@ -14,9 +14,5 @@ namespace VADEdit
     /// </summary>
     public partial class App : Application
     {
-        static App()
-        {
-            Settings.Save();
-        }
     }
 }

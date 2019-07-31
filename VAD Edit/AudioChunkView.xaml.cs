@@ -78,13 +78,35 @@ namespace VADEdit
                 @this.SpeechText = e.NewValue as string;
             }));
 
+        public new Brush Background
+        {
+            get { return (Brush)GetValue(BackgroundProperty); }
+            set { SetValue(BackgroundProperty, value); }
+        }
+
+        // Using a DependencyProperty as the backing store for Background.  This enables animation, styling, binding, etc...
+        public static readonly new DependencyProperty BackgroundProperty =
+            DependencyProperty.Register("Background", typeof(Brush), typeof(AudioChunkView), new PropertyMetadata(Brushes.White, (o, e) =>
+            {
+                var @this = o as AudioChunkView;
+                @this.BaseBackground = e.NewValue as Brush;
+            }));
+
+
+
+        public Brush BaseBackground
+        {
+            get { return base.Background; }
+            set { base.Background = value; }
+        }
+
 
         public AudioChunkView()
         {
             InitializeComponent();
             StaticFocused += delegate
             {
-                Background = Brushes.White;
+                BaseBackground = Background;
             };
         }
 
@@ -121,7 +143,7 @@ namespace VADEdit
         private void TextBox_GotKeyboardFocus(object sender, KeyboardFocusChangedEventArgs e)
         {
             StaticFocused?.Invoke(this, EventArgs.Empty);
-            Background = SystemColors.MenuHighlightBrush;
+            BaseBackground = SystemColors.MenuHighlightBrush;
             GotSelectionFocus?.Invoke(this, EventArgs.Empty);
         }
 
