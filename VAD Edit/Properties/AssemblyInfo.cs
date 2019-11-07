@@ -10,7 +10,7 @@ using System.Windows;
 [assembly: AssemblyTitle("VAD Edit")]
 [assembly: AssemblyDescription("Voice Activity Detection Tool With Post Editor and STT")]
 [assembly: AssemblyConfiguration("")]
-[assembly: AssemblyCompany("NewEra AI Robotics")]
+[assembly: AssemblyCompany("NewEraAI Robotics")]
 [assembly: AssemblyProduct("VAD Edit")]
 [assembly: AssemblyCopyright("Copyright ©  2019")]
 [assembly: AssemblyTrademark("")]
@@ -51,5 +51,7 @@ using System.Windows;
 // You can specify all the values or you can default the Build and Revision Numbers
 // by using the '*' as shown below:
 // [assembly: AssemblyVersion("1.0.*")]
-[assembly: AssemblyVersion("1.3.0.0")]
-[assembly: AssemblyFileVersion("1.3.0.0")]
+[assembly: AssemblyVersion("1.3.1.0")]
+[assembly: AssemblyFileVersion("1.3.1.0")]
+[assembly: NeutralResourcesLanguage("en-US")]
+

@@ -53,6 +53,13 @@
                 <CheckBox Name="chkIncludeSttResult" Margin="0,5,0,0" Content="Include audio file size"/>
             </StackPanel>
         </GroupBox>
+        <GroupBox Header="Color Options" Margin="10,0" Height="auto">
+            <StackPanel Margin="5">
+                <CheckBox Name="chkIncludeAudioFileSize" Margin="0,5,0,0" Content="Include STT result"/>
+                <CheckBox Name="chkIncludeAudioLengthMillis" Margin="0,5,0,0" Content="Include Audio Length (ms)"/>
+                <CheckBox Name="chkIncludeSttResult" Margin="0,5,0,0" Content="Include audio file size"/>
+            </StackPanel>
+        </GroupBox>
         <StackPanel Margin="20" Orientation="Horizontal" FlowDirection="RightToLeft">
             <Button Content="Cancel" Width="76" Height="25" IsCancel="True" Click="Cancel_Click"/>
             <Button Content="OK" Margin="8,0" Width="75" Height="25" IsDefault="True" Click="OK_Click"/>
