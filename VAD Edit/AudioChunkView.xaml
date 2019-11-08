@@ -6,14 +6,17 @@
              xmlns:d="http://schemas.microsoft.com/expression/blend/2008" 
              xmlns:local="clr-namespace:VADEdit"
              xmlns:conv="clr-namespace:VADEdit.Converters"
-             mc:Ignorable="d" 
-             Height="30" d:DesignWidth="800"
-             Background="White">
+             mc:Ignorable="d" Background="White"
+             Height="30" d:DesignWidth="800" BorderBrush="Transparent" BorderThickness="1">
     <UserControl.Resources>
         <conv:NegateVisibility x:Key="negateVisibility" />
     </UserControl.Resources>
-    <Grid>
+    <UserControl.RenderTransform>
+        <TranslateTransform x:Name="transform" />
+    </UserControl.RenderTransform>
+    <Grid Name="grdBackground" Background="White">
         <Grid.ColumnDefinitions>
+            <ColumnDefinition Width="auto"/>
             <ColumnDefinition Width="auto"/>
             <ColumnDefinition Width="auto"/>
             <ColumnDefinition Width="auto"/>
@@ -22,13 +25,18 @@
             <ColumnDefinition Width="auto"/>
             <ColumnDefinition Width="auto"/>
         </Grid.ColumnDefinitions>
-        <Button Name="btnPlay" Click="btnPlay_Click" Visibility="{Binding PlayButtonVisibility, ElementName=this}" Margin="1" Content="4" FontFamily="Webdings" FontSize="20" Foreground="Green" Width="{Binding ActualHeight, RelativeSource={RelativeSource Self}}" ToolTip="Play" Focusable="False"/>
-        <Button Name="btnStop" Click="btnStop_Click" Visibility="{Binding PlayButtonVisibility, ElementName=this, Converter={StaticResource negateVisibility}}" Margin="1" Content="&lt;" FontFamily="Webdings" FontSize="20" Foreground="Black" Width="{Binding ActualHeight, RelativeSource={RelativeSource Self}}" ToolTip="Stop" Focusable="False"/>
-        <Label Name="txtTime" Content="{Binding TimeRange, ElementName=this}" VerticalAlignment="Stretch" VerticalContentAlignment="Center" Grid.Column="1" Padding="5,1" PreviewMouseLeftButtonDown="txtTime_PreviewMouseLeftButtonDown"/>
-        <Button Name="btnStt" Click="btnStt_Click" Content=">> STT >>" Grid.Column="2" Margin="1" Width="100" ToolTip="Convert range to text" Focusable="False"/>
-        <TextBox Name="txtSpeech" Text="{Binding SpeechText, ElementName=this, UpdateSourceTrigger=PropertyChanged}" Background="Transparent" VerticalContentAlignment="Center" Grid.Column="3" Margin="1"  GotKeyboardFocus="TextBox_GotKeyboardFocus" SelectionBrush="Green" TextChanged="txtSpeech_TextChanged" />
-        <Button Name="btnDuplicate" Click="btnDuplicate_Click" Content="Ê" FontFamily="Wingdings" FontSize="20" VerticalContentAlignment="Center" Foreground="Orange" Grid.Column="4" Margin="1" Width="{Binding ActualHeight, RelativeSource={RelativeSource Self}}" ToolTip="Insert Duplicate Below" Focusable="False"/>
-        <Button Name="btnExport" Click="btnExport_Click" Content="ü" FontFamily="Wingdings" FontSize="20" Foreground="Green" Grid.Column="5" Margin="1" Width="{Binding ActualHeight, RelativeSource={RelativeSource Self}}" ToolTip="Export" Focusable="False"/>
-        <Button Name="btnDelete" Click="btnDelete_Click" Content="û" FontFamily="Wingdings" FontSize="20" Foreground="Red" Grid.Column="6" Margin="1" Width="{Binding ActualHeight, RelativeSource={RelativeSource Self}}" ToolTip="Remove" Focusable="False"/>
+        <Grid Width="{Binding ActualHeight, RelativeSource={RelativeSource Self}}">
+            <Thumb Name="btnDrag" BorderThickness="0" Background="Transparent" Cursor="SizeAll" Opacity="0.01"/>
+            <TextBlock HorizontalAlignment="Center" VerticalAlignment="Center" Text="==" IsHitTestVisible="False"/>
+        </Grid>
+        <Button Background="Transparent" Name="btnPlay" Grid.Column="1" Click="btnPlay_Click" Visibility="{Binding PlayButtonVisibility, ElementName=this}" Margin="1" Content="4" FontFamily="Webdings" FontSize="20" Foreground="Green" Width="{Binding ActualHeight, RelativeSource={RelativeSource Self}}" ToolTip="Play" Focusable="False"/>
+        <Button Background="Transparent" Name="btnStop" Grid.Column="1" Click="btnStop_Click" Visibility="{Binding PlayButtonVisibility, ElementName=this, Converter={StaticResource negateVisibility}}" Margin="1" Content="&lt;" FontFamily="Webdings" FontSize="20" Foreground="Black" Width="{Binding ActualHeight, RelativeSource={RelativeSource Self}}" ToolTip="Stop" Focusable="False"/>
+        <Label Name="txtTime" Grid.Column="2" Content="{Binding TimeRange, ElementName=this}" VerticalAlignment="Stretch" VerticalContentAlignment="Center" Padding="5,1" PreviewMouseLeftButtonDown="txtTime_PreviewMouseLeftButtonDown"/>
+        <Button Background="Transparent" Name="btnStt" Grid.Column="3" Click="btnStt_Click" Content=">> STT >>" Margin="1" Width="100" ToolTip="Convert range to text" Focusable="False"/>
+        <TextBox Name="txtSpeech" Grid.Column="4" Text="{Binding SpeechText, ElementName=this, UpdateSourceTrigger=PropertyChanged}" Background="Transparent" VerticalContentAlignment="Center" Margin="1"  GotKeyboardFocus="TextBox_GotKeyboardFocus" SelectionBrush="Green" TextChanged="txtSpeech_TextChanged" />
+        <Button Background="Transparent" Name="btnDuplicate" Grid.Column="5" Click="btnDuplicate_Click" Content="Ê" FontFamily="Wingdings" FontSize="20" VerticalContentAlignment="Center" Foreground="Orange" Margin="1" Width="{Binding ActualHeight, RelativeSource={RelativeSource Self}}" ToolTip="Insert Duplicate Below" Focusable="False"/>
+        <Button Background="Transparent" Name="btnExport" Grid.Column="6" Click="btnExport_Click" Content="ü" FontFamily="Wingdings" FontSize="20" Foreground="Green" Margin="1" Width="{Binding ActualHeight, RelativeSource={RelativeSource Self}}" ToolTip="Export" Focusable="False"/>
+        <Button Background="Transparent" Name="btnDelete" Grid.Column="7" Click="btnDelete_Click" Content="û" FontFamily="Wingdings" FontSize="20" Foreground="Red" Margin="1" Width="{Binding ActualHeight, RelativeSource={RelativeSource Self}}" ToolTip="Remove" Focusable="False"/>
+        <Label Name="grdSelect" Grid.ColumnSpan="8" IsHitTestVisible="False" Visibility="Hidden"/>
     </Grid>
 </UserControl>

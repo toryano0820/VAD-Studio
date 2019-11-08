@@ -10,6 +10,7 @@ using System.Threading;
 using System.Threading.Tasks;
 using System.Windows;
 using System.Windows.Media;
+using static VADEdit.Utils;
 
 namespace VADEdit
 {
@@ -26,30 +27,38 @@ namespace VADEdit
         private WaveStream waveStream = null;
         private string streamFileName = null;
         private bool cancelFlag = true;
-        private int sttBatchStart = 0;
-        private int exportBatchStart = 0;
 
         public MainWindow()
         {
             InitializeComponent();
 
             Application.Current.MainWindow = this;
+            Background = (SolidColorBrush)(new BrushConverter()).ConvertFromString(Settings.AppBackgroundColor);
 
             SetTitle();
 
             Settings.Save();
 
-            waveView.SelectionAdjusted += delegate
+            AudioChunkView.StaticFocused += delegate
+            {
+                btnAddChunk.IsEnabled = false;
+            };
+
+            waveView.SelectionChanged += (o, e) =>
             {
                 if (currentChunkView != null)
                 {
-                    currentChunkView.TimeRange = new TimeRange()
-                    {
-                        Start = TimeSpan.FromSeconds((waveView.SelectionStart / waveStream.Length) * waveStream.TotalTime.TotalSeconds),
-                        End = TimeSpan.FromSeconds((waveView.SelectionEnd / waveStream.Length) * waveStream.TotalTime.TotalSeconds)
-                    };
+                    currentChunkView.TimeRange = e;
                     waveView.PlayRangeEnd = currentChunkView.TimeRange.End;
+                    currentChunkView.GSttText = null;
+                    currentChunkView.VisualState = AudioChunkView.State.Idle;
                 }
+                btnAddChunk.IsEnabled = false;
+            };
+
+            waveView.NewSelection += delegate
+            {
+                btnAddChunk.IsEnabled = true;
             };
 
             Loaded += delegate
@@ -142,6 +151,7 @@ namespace VADEdit
             var res = dlg.ShowDialog();
             if (res == System.Windows.Forms.DialogResult.OK)
             {
+                btnAddChunk.IsEnabled = false;
                 LoadStream(dlg.FileName);
             }
             dlg.Dispose();
@@ -166,6 +176,7 @@ namespace VADEdit
                 grdWait.Visibility = Visibility.Visible;
                 btnCancel.Visibility = Visibility.Collapsed;
                 grdMain.IsEnabled = false;
+                btnAddChunk.IsEnabled = false;
                 var chunkSaveLocation = System.IO.Path.Combine(OutputBasePath, dlg.SafeFileName.Substring(0, dlg.SafeFileName.Length - 4));
                 while (File.Exists(chunkSaveLocation + ".wav"))
                 {
@@ -182,7 +193,7 @@ namespace VADEdit
                     try
                     {
                         var ffmpeg = new Process();
-#if DEBUG
+#if false //DEBUG
                         ffmpeg.StartInfo.FileName = "cmd.exe";
                         ffmpeg.StartInfo.Arguments = $"/K ffmpeg.exe -y -i \"{dlg.FileName}\" -c copy -vn -acodec pcm_s16le -ar 16000 -ac 1 \"{chunkSaveLocation}.wav\"";
                         ffmpeg.StartInfo.WindowStyle = ProcessWindowStyle.Normal;
@@ -206,7 +217,8 @@ namespace VADEdit
                     catch (TaskCanceledException) { }
                     catch (Exception ex)
                     {
-                        File.AppendAllText("error.log", $"{DateTime.Now.ToString("yyyyMMddHHmmss")} [ERROR]: {ex.Message}:\n{ex.StackTrace}\n");
+                        //File.AppendAllText("error.log", $"{DateTime.Now.ToString("yyyyMMddHHmmss")} [ERROR]: {ex.Message}:\n{ex.StackTrace}\n");
+                        Logger.Log($"{ex.Message}:\n{ex.StackTrace}", Logger.Type.Error);
                         MessageBox.Show(ex.Message, "Program Error", MessageBoxButton.OK, MessageBoxImage.Error);
                     }
                 }).Start();
@@ -217,9 +229,6 @@ namespace VADEdit
         private void SplitSilence()
         {
             cancelFlag = false;
-            sttBatchStart = 0;
-            exportBatchStart = 0;
-
             waveView.Pause();
 
             grdTime.Children.Clear();
@@ -230,6 +239,7 @@ namespace VADEdit
             txtWait.Text = "VAD processing... Please wait...";
             grdWait.Visibility = Visibility.Visible;
             grdMain.IsEnabled = false;
+            btnAddChunk.IsEnabled = false;
 
             var waveTotalMillis = waveStream.TotalTime.TotalMilliseconds;
             var waveData = waveView.WaveFormData;
@@ -325,7 +335,8 @@ namespace VADEdit
                     catch (TaskCanceledException) { }
                     catch (Exception ex)
                     {
-                        File.AppendAllText("error.log", $"{DateTime.Now.ToString("yyyyMMddHHmmss")} [ERROR]: {ex.Message}:\n{ex.StackTrace}\n");
+                        //File.AppendAllText("error.log", $"{DateTime.Now.ToString("yyyyMMddHHmmss")} [ERROR]: {ex.Message}:\n{ex.StackTrace}\n");
+                        Logger.Log($"{ex.Message}:\n{ex.StackTrace}", Logger.Type.Error);
                         MessageBox.Show(ex.Message, "Program Error", MessageBoxButton.OK, MessageBoxImage.Error);
                     }
 
@@ -380,7 +391,8 @@ namespace VADEdit
                     catch (TaskCanceledException) { }
                     catch (Exception ex)
                     {
-                        File.AppendAllText("error.log", $"{DateTime.Now.ToString("yyyyMMddHHmmss")} [ERROR]: {ex.Message}:\n{ex.StackTrace}\n");
+                        //File.AppendAllText("error.log", $"{DateTime.Now.ToString("yyyyMMddHHmmss")} [ERROR]: {ex.Message}:\n{ex.StackTrace}\n");
+                        Logger.Log($"{ex.Message}:\n{ex.StackTrace}", Logger.Type.Error);
                         MessageBox.Show(ex.Message, "Program Error", MessageBoxButton.OK, MessageBoxImage.Error);
                     }
 
@@ -431,7 +443,8 @@ namespace VADEdit
             {
                 Dispatcher.Invoke(() =>
                 {
-                    File.AppendAllText("error.log", $"{DateTime.Now.ToString("yyyyMMddHHmmss")} [WARN]: Processing STT on audio longer than 30 seconds:\n    {streamFileName}: {chunkView.TimeRange}\n");
+                    //File.AppendAllText("error.log", $"{DateTime.Now.ToString("yyyyMMddHHmmss")} [WARN]: Processing STT on audio longer than 30 seconds:\n    {streamFileName}: {chunkView.TimeRange}\n");
+                    Logger.Log($"Processing STT on audio longer than 30 seconds:\n    {streamFileName}: {chunkView.TimeRange}", Logger.Type.Warn);
                     finishedCallback?.Invoke();
                     if (!suppressErrorDialogs)
                     {
@@ -519,21 +532,29 @@ namespace VADEdit
                                     {
                                         Dispatcher.Invoke(() =>
                                         {
-                                            chunkView.Background = (SolidColorBrush)(new BrushConverter()).ConvertFromString("#AAFFFF00");
+                                            chunkView.VisualState = AudioChunkView.State.STTSuccess;
                                             chunkView.GSttText = alternative.Transcript;
+                                            chunkView.SpeechText = alternative.Transcript;
                                         });
-                                        break;
+                                        return;
                                     }
                                 }
                             }
+                            Dispatcher.Invoke(() =>
+                            {
+                                chunkView.VisualState = AudioChunkView.State.Error;
+                            });
+
+                            throw new Exception("unrecognizable stream");
                         }
                         catch (Exception ex)
                         {
                             Dispatcher.Invoke(() =>
                             {
-                                chunkView.Background = (SolidColorBrush)(new BrushConverter()).ConvertFromString("#AAFF0000");
+                                chunkView.VisualState = AudioChunkView.State.Error;
                             });
-                            File.AppendAllText("error.log", $"{DateTime.Now.ToString("yyyyMMddHHmmss")} [ERROR]: {ex.Message}:\n{ex.StackTrace}\n");
+                            //File.AppendAllText("error.log", $"{DateTime.Now.ToString("yyyyMMddHHmmss")} [ERROR]: {ex.Message}:\n{ex.StackTrace}\n");
+                            Logger.Log($"{ex.Message}:\n{ex.StackTrace}", Logger.Type.Error);
                             if (!suppressErrorDialogs)
                             {
                                 MessageBox.Show(ex.Message, "Program Error", MessageBoxButton.OK, MessageBoxImage.Error);
@@ -550,7 +571,8 @@ namespace VADEdit
             catch (TaskCanceledException) { }
             catch (Exception ex)
             {
-                File.AppendAllText("error.log", $"{DateTime.Now.ToString("yyyyMMddHHmmss")} [ERROR]: {ex.Message}:\n{ex.StackTrace}\n");
+                //File.AppendAllText("error.log", $"{DateTime.Now.ToString("yyyyMMddHHmmss")} [ERROR]: {ex.Message}:\n{ex.StackTrace}\n");
+                Logger.Log($"{ex.Message}:\n{ex.StackTrace}", Logger.Type.Error);
                 if (!suppressErrorDialogs)
                 {
                     MessageBox.Show(ex.Message, "Program Error", MessageBoxButton.OK, MessageBoxImage.Error);
@@ -565,7 +587,7 @@ namespace VADEdit
                 chunkView.BringIntoView();
                 if (string.IsNullOrWhiteSpace(chunkView.SpeechText))
                 {
-                    chunkView.Background = (SolidColorBrush)(new BrushConverter()).ConvertFromString("#AAFFFF00");
+                    chunkView.VisualState = AudioChunkView.State.Error;
                     return;
                 }
             });
@@ -638,10 +660,9 @@ namespace VADEdit
                 line += $"\"{speechText}\"\n";
 
                 File.AppendAllText(System.IO.Path.Combine(chunkLocation, "sentence_map.csv"), line);
-
                 Dispatcher.Invoke(() =>
                 {
-                    chunkView.Background = (SolidColorBrush)(new BrushConverter()).ConvertFromString("#AA00FF00");
+                    chunkView.VisualState = AudioChunkView.State.ExportSuccess;
                     if (!suppressErrorDialogs)
                         MessageBox.Show($"Done!\n{savePath}", "Export Info", MessageBoxButton.OK, MessageBoxImage.Information);
                 });
@@ -650,14 +671,14 @@ namespace VADEdit
             {
                 Dispatcher.Invoke(() =>
                 {
-                    chunkView.Background = (SolidColorBrush)(new BrushConverter()).ConvertFromString("#AAFF0000");
+                    chunkView.VisualState = AudioChunkView.State.Error;
                     if (!suppressErrorDialogs)
                         MessageBox.Show("Text is empty!", "Data Warning", MessageBoxButton.OK, MessageBoxImage.Warning);
                 });
             }
         }
 
-        private void AddItemView(TimeRange timeRange, string gSttText = null, string speechText = null, int insertIndex = -1)
+        private async void AddItemView(TimeRange timeRange, string gSttText = null, string speechText = null, int insertIndex = -1, bool focus = false)
         {
             var chunkView = new AudioChunkView()
             {
@@ -746,6 +767,14 @@ namespace VADEdit
             else
                 grdTime.Children.Insert(insertIndex, chunkView);
 
+            if (focus)
+            {
+                while (!chunkView.IsLoaded)
+                    await Task.Delay(1);
+                chunkView.Select();
+                chunkScroller.BringIntoView();
+            }
+
             txtCount.Text = $"Count: {grdTime.Children.Count}";
         }
 
@@ -781,7 +810,7 @@ namespace VADEdit
 
         private void SttAll_Click(object sender, RoutedEventArgs e)
         {
-            var chunkViews = grdTime.Children.OfType<AudioChunkView>().Skip(sttBatchStart).Take(Settings.BatchSize).ToArray(); //.Where(c => string.IsNullOrWhiteSpace(c.SpeechText)).ToArray();
+            var chunkViews = grdTime.Children.OfType<AudioChunkView>().Where((cv) => cv.VisualState != AudioChunkView.State.Error && string.IsNullOrEmpty(cv.SpeechText)).Take(Settings.BatchSize).ToArray();
 
             if (chunkViews.Count() == 0)
             {
@@ -828,7 +857,6 @@ namespace VADEdit
 
                         Thread.Sleep(200);
                         GC.Collect();
-                        sttBatchStart++;
                     }
                 }).Start();
             }
@@ -836,14 +864,11 @@ namespace VADEdit
 
         private void ExportAll_Click(object sender, RoutedEventArgs e)
         {
-            if (sttBatchStart <= exportBatchStart)
-                return;
-
-            var chunkViews = grdTime.Children.OfType<AudioChunkView>().Skip(exportBatchStart).Take(Math.Min(Settings.BatchSize, sttBatchStart - exportBatchStart)).ToArray(); //.Where(c => !string.IsNullOrWhiteSpace(c.SpeechText)).ToArray();
+            var chunkViews = grdTime.Children.OfType<AudioChunkView>().Where((cv) => cv.VisualState != AudioChunkView.State.Error && cv.VisualState != AudioChunkView.State.ExportSuccess && !string.IsNullOrEmpty(cv.SpeechText)).Take(Settings.BatchSize).ToArray();
 
             if (chunkViews.Count() == 0)
             {
-                MessageBox.Show("All chunks have been processed.", "Data Warning", MessageBoxButton.OK, MessageBoxImage.Warning);
+                MessageBox.Show("No chunks are ready for exporting.", "Data Warning", MessageBoxButton.OK, MessageBoxImage.Warning);
             }
             else // if (MessageBox.Show("Are you sure you want to export all valid chunks?", "Operation Confirmation", MessageBoxButton.YesNo, MessageBoxImage.Question) == MessageBoxResult.Yes)
             {
@@ -865,7 +890,6 @@ namespace VADEdit
 
                         Thread.Sleep(100);
                         GC.Collect();
-                        exportBatchStart++;
                     }
 
                     Dispatcher.Invoke(() =>
@@ -891,6 +915,12 @@ namespace VADEdit
         private void Options_Click(object sender, RoutedEventArgs e)
         {
             SettingsWindow.Show();
+            Background = (SolidColorBrush)(new BrushConverter()).ConvertFromString(Settings.AppBackgroundColor);
+            waveView.InvalidateVisual();
+            foreach (var chunkView in grdTime.Children.OfType<AudioChunkView>())
+            {
+                chunkView.InvalidateVisual();
+            }
         }
 
         protected override void OnClosing(CancelEventArgs e)
@@ -913,6 +943,23 @@ namespace VADEdit
                 grdWait.Visibility = Visibility.Hidden;
             }
             cancelFlag = true;
+        }
+
+        private void AddChunk_Click(object sender, RoutedEventArgs e)
+        {
+            btnAddChunk.IsEnabled = false;
+
+            var totLen = waveView.WaveStream.Length;
+            var totTime = waveView.WaveStream.TotalTime.TotalSeconds;
+
+            AddItemView(
+                new TimeRange(
+                    (waveView.SelectionStart / totLen) * totTime,
+                    (waveView.SelectionEnd / totLen) * totTime
+                ),
+                insertIndex: grdTime.Children.Contains(currentChunkView) ? grdTime.Children.IndexOf(currentChunkView) + 1 : 0,
+                focus: true
+            );
         }
     }
 

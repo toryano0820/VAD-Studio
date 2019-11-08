@@ -4,6 +4,8 @@ using System.IO;
 using System.Windows;
 using System.Windows.Controls;
 using System.Windows.Data;
+using System.Windows.Media;
+using Xceed.Wpf.Toolkit;
 
 namespace VADEdit
 {
@@ -27,6 +29,15 @@ namespace VADEdit
             chkIncludeSttResult.IsChecked = Settings.IncludeSttResult;
             chkIncludeAudioFileSize.IsChecked = Settings.IncludeAudioFileSize;
             chkIncludeAudioLengthMillis.IsChecked = Settings.IncludeAudioLengthMillis;
+            clrAudioWaveSelection.SelectedColor = (Color)ColorConverter.ConvertFromString(Settings.AudioWaveSelectionColor);
+            clrAudioWave.SelectedColor = (Color)ColorConverter.ConvertFromString(Settings.AudioWaveColor);
+            clrAudioWaveBackground.SelectedColor = (Color)ColorConverter.ConvertFromString(Settings.AudioWaveBackgroundColor);
+            clrChunkError.SelectedColor = (Color)ColorConverter.ConvertFromString(Settings.ChunkErrorColor);
+            clrChunkExport.SelectedColor = (Color)ColorConverter.ConvertFromString(Settings.ChunkExportColor);
+            clrChunkSTT.SelectedColor = (Color)ColorConverter.ConvertFromString(Settings.ChunkSTTColor);
+            clrChunkText.SelectedColor = (Color)ColorConverter.ConvertFromString(Settings.ChunkTextColor);
+            clrChunkSelection.SelectedColor = (Color)ColorConverter.ConvertFromString(Settings.ChunkSelectionColor);
+            clrAppBackground.SelectedColor = (Color)ColorConverter.ConvertFromString(Settings.AppBackgroundColor);
 
             txtMaxSilence.PreviewTextInput += (o, e) =>
             {
@@ -111,7 +122,15 @@ namespace VADEdit
                 Settings.IncludeSttResult = win.chkIncludeSttResult.IsChecked.Value;
                 Settings.IncludeAudioFileSize = win.chkIncludeAudioFileSize.IsChecked.Value;
                 Settings.IncludeAudioLengthMillis = win.chkIncludeAudioLengthMillis.IsChecked.Value;
-
+                Settings.AudioWaveBackgroundColor = win.clrAudioWaveBackground.SelectedColorText;
+                Settings.AudioWaveColor = win.clrAudioWave.SelectedColorText;
+                Settings.AudioWaveSelectionColor = win.clrAudioWaveSelection.SelectedColorText;
+                Settings.ChunkErrorColor = win.clrChunkError.SelectedColorText;
+                Settings.ChunkExportColor = win.clrChunkExport.SelectedColorText;
+                Settings.ChunkSTTColor = win.clrChunkSTT.SelectedColorText;
+                Settings.ChunkTextColor = win.clrChunkText.SelectedColorText;
+                Settings.ChunkSelectionColor = win.clrChunkSelection.SelectedColorText;
+                Settings.AppBackgroundColor = win.clrAppBackground.SelectedColorText;
                 Settings.Save();
             }
         }
@@ -144,6 +163,11 @@ namespace VADEdit
                 txtSttCredentialPath.Text = fileDir;
             }
             dlg.Dispose();
+        }
+
+        private void btnChangeColor_Click(object sender, RoutedEventArgs e)
+        {
+            //new ColorPicker().
         }
     }
 

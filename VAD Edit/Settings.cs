@@ -18,6 +18,15 @@ namespace VADEdit
         public static bool IncludeSttResult { get; set; } = false;
         public static bool IncludeAudioFileSize { get; set; } = false;
         public static bool IncludeAudioLengthMillis { get; set; } = false;
+        public static string AudioWaveColor { get; set; } = "#FFFF00";
+        public static string AudioWaveBackgroundColor { get; set; } = "#000000";
+        public static string AudioWaveSelectionColor { get; set; } = "#AA0000FF";
+        public static string ChunkTextColor { get; set; } = "#000000";
+        public static string ChunkSTTColor { get; set; } = "#00FF00";
+        public static string ChunkExportColor { get; set; } = "#0000FF";
+        public static string ChunkErrorColor { get; set; } = "#FF0000";
+        public static string ChunkSelectionColor { get; set; } = "#FF0000";
+        public static string AppBackgroundColor { get; set; } = "#FFFFFF";
 
         private static string configFilePath = Path.Combine(AppDomain.CurrentDomain.BaseDirectory, "config.json");
 
@@ -39,6 +48,15 @@ namespace VADEdit
             IncludeSttResult = (bool)(settings.IncludeSttResult ?? true);
             IncludeAudioFileSize = (bool)(settings.IncludeAudioFileSize ?? true);
             IncludeAudioLengthMillis = (bool)(settings.IncludeAudioLengthMillis ?? true);
+            AudioWaveColor = (string)(settings.AudioWaveColor ?? "#FFFF00");
+            AudioWaveBackgroundColor = (string)(settings.AudioWaveBackgroundColor ?? "#000000");
+            AudioWaveSelectionColor = (string)(settings.AudioWaveSelectionColor ?? "#AA0000FF");
+            ChunkTextColor = (string)(settings.ChunkTextColor ?? "#000000");
+            ChunkSTTColor = (string)(settings.ChunkSTTColor ?? "#00FF00");
+            ChunkExportColor = (string)(settings.ChunkExportColor ?? "#0000FF");
+            ChunkErrorColor = (string)(settings.ChunkErrorColor ?? "#FF0000");
+            ChunkSelectionColor = (string)(settings.ChunkSelectionColor ?? "#AA0000FF");
+            AppBackgroundColor = (string)(settings.AppBackgroundColor ?? "#FFFFFF");
         }
 
         public static void Save()
@@ -57,7 +75,16 @@ namespace VADEdit
                     STTCredentialtPath,
                     IncludeSttResult,
                     IncludeAudioFileSize,
-                    IncludeAudioLengthMillis
+                    IncludeAudioLengthMillis,
+                    AudioWaveColor,
+                    AudioWaveBackgroundColor,
+                    AudioWaveSelectionColor,
+                    ChunkTextColor,
+                    ChunkSTTColor,
+                    ChunkExportColor,
+                    ChunkErrorColor,
+                    ChunkSelectionColor,
+                    AppBackgroundColor
                 }, Formatting.Indented));
 
             var appDir = AppDomain.CurrentDomain.BaseDirectory;

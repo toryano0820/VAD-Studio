@@ -6,6 +6,7 @@ using System.Linq;
 using System.Threading.Tasks;
 using System.Windows;
 using System.Runtime;
+using static VADEdit.Utils;
 
 namespace VADEdit
 {
@@ -14,5 +15,10 @@ namespace VADEdit
     /// </summary>
     public partial class App : Application
     {
+        protected override void OnStartup(StartupEventArgs e)
+        {
+            Logger.Initialize();
+            base.OnStartup(e);
+        }
     }
 }

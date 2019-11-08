@@ -1,18 +1,8 @@
 ﻿using System;
-using System.Collections.Generic;
-using System.Globalization;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
 using System.Windows;
 using System.Windows.Controls;
-using System.Windows.Data;
-using System.Windows.Documents;
 using System.Windows.Input;
 using System.Windows.Media;
-using System.Windows.Media.Imaging;
-using System.Windows.Navigation;
-using System.Windows.Shapes;
 
 namespace VADEdit
 {
@@ -21,7 +11,7 @@ namespace VADEdit
     /// </summary>
     public partial class AudioChunkView : UserControl
     {
-        private static event EventHandler StaticFocused;
+        public static event EventHandler StaticFocused;
         public event EventHandler PlayButtonClicked;
         public event EventHandler SttButtonClicked;
         public event EventHandler DuplicateButtonClicked;
@@ -29,6 +19,14 @@ namespace VADEdit
         public event EventHandler DeleteButtonClicked;
         public event EventHandler StopButtonClicked;
         public event EventHandler GotSelectionFocus;
+
+        public enum State
+        {
+            Idle,
+            STTSuccess,
+            ExportSuccess,
+            Error
+        }
 
 
         public Visibility PlayButtonVisibility
@@ -72,41 +70,73 @@ namespace VADEdit
 
         // Using a DependencyProperty as the backing store for GSttText.  This enables animation, styling, binding, etc...
         public static readonly DependencyProperty GSttTextProperty =
-            DependencyProperty.Register("GSttText", typeof(string), typeof(AudioChunkView), new PropertyMetadata(null, (o, e) =>
-            {
-                var @this = o as AudioChunkView;
-                @this.SpeechText = e.NewValue as string;
-            }));
+            DependencyProperty.Register("GSttText", typeof(string), typeof(AudioChunkView), new PropertyMetadata(null));
 
-        public new Brush Background
+        public State VisualState
         {
-            get { return (Brush)GetValue(BackgroundProperty); }
-            set { SetValue(BackgroundProperty, value); }
+            get { return (State)GetValue(VisualStateProperty); }
+            set { SetValue(VisualStateProperty, value); }
         }
 
-        // Using a DependencyProperty as the backing store for Background.  This enables animation, styling, binding, etc...
-        public static readonly new DependencyProperty BackgroundProperty =
-            DependencyProperty.Register("Background", typeof(Brush), typeof(AudioChunkView), new PropertyMetadata(Brushes.White, (o, e) =>
+        // Using a DependencyProperty as the backing store for VisualState.  This enables animation, styling, binding, etc...
+        public static readonly DependencyProperty VisualStateProperty =
+            DependencyProperty.Register("VisualState", typeof(State), typeof(AudioChunkView), new PropertyMetadata(State.Idle, (o, e) =>
             {
-                var @this = o as AudioChunkView;
-                @this.BaseBackground = e.NewValue as Brush;
+                (o as AudioChunkView).InvalidateVisual();
             }));
 
-
-
-        public Brush BaseBackground
-        {
-            get { return base.Background; }
-            set { base.Background = value; }
-        }
-
+        private bool mouseDownTriggered = false;
 
         public AudioChunkView()
         {
             InitializeComponent();
             StaticFocused += delegate
             {
-                BaseBackground = Background;
+                grdSelect.Visibility = Visibility.Hidden;
+            };
+
+            btnDrag.DragCompleted += (o, e) =>
+            {
+                BorderBrush = Brushes.Transparent;
+                Panel.SetZIndex(this, 0);
+                transform.Y = 0;
+            };
+
+            btnDrag.DragDelta += (o, e) =>
+            {
+                transform.Y += e.VerticalChange;
+                if (transform.Y - 2 > Height / 2)
+                {
+                    var parent = Parent as StackPanel;
+                    var newY = -(transform.Y - 5);
+                    var newIndex = parent.Children.IndexOf(this) + 1;
+
+                    if (newIndex < parent.Children.Count)
+                    {
+                        parent.Children.Remove(this);
+                        parent.Children.Insert(newIndex, this);
+                        transform.Y = newY;
+                    }
+                }
+                else if (transform.Y + 2 < -Height / 2)
+                {
+                    var parent = Parent as StackPanel;
+                    var newY = -(transform.Y + 5);
+                    var newIndex = parent.Children.IndexOf(this) - 1;
+
+                    if (newIndex >= 0)
+                    {
+                        parent.Children.Remove(this);
+                        parent.Children.Insert(newIndex, this);
+                        transform.Y = newY;
+                    }
+                }
+            };
+
+            btnDrag.DragStarted += delegate
+            {
+                BorderBrush = (SolidColorBrush)(new BrushConverter()).ConvertFromString("#808080");
+                Panel.SetZIndex(this, 1);
             };
         }
 
@@ -142,8 +172,13 @@ namespace VADEdit
 
         private void TextBox_GotKeyboardFocus(object sender, KeyboardFocusChangedEventArgs e)
         {
+            if (mouseDownTriggered)
+            {
+                mouseDownTriggered = false;
+                return;
+            }
             StaticFocused?.Invoke(this, EventArgs.Empty);
-            BaseBackground = SystemColors.MenuHighlightBrush;
+            grdSelect.Visibility = Visibility.Visible;
             GotSelectionFocus?.Invoke(this, EventArgs.Empty);
         }
 
@@ -152,12 +187,19 @@ namespace VADEdit
             if (string.IsNullOrEmpty(txtSpeech.Text))
                 txtSpeech.ToolTip = null;
             else
+            {
                 txtSpeech.ToolTip = txtSpeech.Text;
+                VisualState = State.Idle;
+            }
         }
 
         protected override void OnPreviewMouseLeftButtonDown(MouseButtonEventArgs e)
         {
-            txtSpeech.Focus();
+            StaticFocused?.Invoke(this, EventArgs.Empty);
+            grdSelect.Visibility = Visibility.Visible;
+            GotSelectionFocus?.Invoke(this, EventArgs.Empty);
+            mouseDownTriggered = true;
+            Keyboard.Focus(txtSpeech);
             base.OnPreviewMouseLeftButtonDown(e);
         }
 
@@ -168,7 +210,29 @@ namespace VADEdit
 
         public void Select()
         {
-            Keyboard.Focus(txtSpeech);
+            if (Keyboard.FocusedElement != txtSpeech)
+                Keyboard.Focus(txtSpeech);
+        }
+
+        protected override void OnRender(DrawingContext drawingContext)
+        {
+            switch (VisualState)
+            {
+                case State.Idle:
+                    grdBackground.Background = App.Current.MainWindow.Background;
+                    break;
+                case State.STTSuccess:
+                    grdBackground.Background = (SolidColorBrush)(new BrushConverter()).ConvertFromString(Settings.ChunkSTTColor);
+                    break;
+                case State.Error:
+                    grdBackground.Background = (SolidColorBrush)(new BrushConverter()).ConvertFromString(Settings.ChunkErrorColor);
+                    break;
+                case State.ExportSuccess:
+                    grdBackground.Background = (SolidColorBrush)(new BrushConverter()).ConvertFromString(Settings.ChunkExportColor);
+                    break;
+            }
+            grdSelect.Background = (SolidColorBrush)(new BrushConverter()).ConvertFromString(Settings.ChunkSelectionColor);
+            base.OnRender(drawingContext);
         }
     }
 }

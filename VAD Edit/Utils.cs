@@ -1,9 +1,11 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.Globalization;
+using System.IO;
 using System.Net;
 using System.Reflection;
 using System.Runtime.InteropServices;
+using System.Threading;
 using System.Windows;
 using System.Windows.Data;
 using System.Windows.Interop;
@@ -75,6 +77,53 @@ namespace VADEdit
                 throw exception;
             }
         }
+
+        #region Logger
+        public static class Logger
+        {
+            static bool loggerRunning = false;
+            static Queue<string> logLines = new Queue<string>();
+            static bool appRunning = true;
+
+            public static void Initialize()
+            {
+                if (loggerRunning)
+                    return;
+
+                loggerRunning = true;
+
+                Application.Current.Exit += delegate
+                {
+                    appRunning = false;
+                };
+                new Thread(LoggerThread).Start();
+            }
+
+            public enum Type
+            {
+                Info,
+                Warn,
+                Error
+            }
+
+            private static void LoggerThread()
+            {
+                while (appRunning)
+                {
+                    while (logLines.Count == 0 && appRunning)
+                        Thread.Sleep(1000);
+
+                    if (appRunning)
+                        File.AppendAllText("app.log", logLines.Dequeue());
+                }
+            }
+
+            public static void Log(string message, Type type=Type.Info)
+            {
+                logLines.Enqueue($"{DateTime.Now.ToString("yyyyMMddHHmmss")} [{type.ToString().ToUpper()}]: {message}\n");
+            }
+        }
+        #endregion
 
         #region Aero Blur
         [DllImport("user32.dll")]
