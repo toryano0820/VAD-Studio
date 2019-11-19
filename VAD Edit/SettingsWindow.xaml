@@ -79,6 +79,8 @@
                         <xctl:ColorPicker Name="clrChunkError" Margin="0,5,0,0"/>
                         <TextBlock Margin="0,5,0,0" Text="Chunk Selection" VerticalAlignment="Top" HorizontalAlignment="Left"/>
                         <xctl:ColorPicker Name="clrChunkSelection" Margin="0,5,0,0"/>
+                        <TextBlock Margin="0,5,0,0" Text="Chunk Text Selection" VerticalAlignment="Top" HorizontalAlignment="Left"/>
+                        <xctl:ColorPicker Name="clrChunkTextSelection" Margin="0,5,0,0"/>
                     </StackPanel>
                 </GroupBox>
             </StackPanel>

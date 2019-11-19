@@ -37,6 +37,7 @@ namespace VADEdit
             clrChunkSTT.SelectedColor = (Color)ColorConverter.ConvertFromString(Settings.ChunkSTTColor);
             clrChunkText.SelectedColor = (Color)ColorConverter.ConvertFromString(Settings.ChunkTextColor);
             clrChunkSelection.SelectedColor = (Color)ColorConverter.ConvertFromString(Settings.ChunkSelectionColor);
+            clrChunkTextSelection.SelectedColor = (Color)ColorConverter.ConvertFromString(Settings.ChunkTextSelectionColor);
             clrAppBackground.SelectedColor = (Color)ColorConverter.ConvertFromString(Settings.AppBackgroundColor);
 
             txtMaxSilence.PreviewTextInput += (o, e) =>
@@ -130,6 +131,7 @@ namespace VADEdit
                 Settings.ChunkSTTColor = win.clrChunkSTT.SelectedColorText;
                 Settings.ChunkTextColor = win.clrChunkText.SelectedColorText;
                 Settings.ChunkSelectionColor = win.clrChunkSelection.SelectedColorText;
+                Settings.ChunkTextSelectionColor = win.clrChunkTextSelection.SelectedColorText;
                 Settings.AppBackgroundColor = win.clrAppBackground.SelectedColorText;
                 Settings.Save();
             }

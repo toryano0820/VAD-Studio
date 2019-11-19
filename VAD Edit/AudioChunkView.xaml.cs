@@ -231,6 +231,7 @@ namespace VADEdit
                     grdBackground.Background = (SolidColorBrush)(new BrushConverter()).ConvertFromString(Settings.ChunkExportColor);
                     break;
             }
+            txtSpeech.SelectionBrush = (SolidColorBrush)(new BrushConverter()).ConvertFromString(Settings.ChunkTextSelectionColor);
             grdSelect.Background = (SolidColorBrush)(new BrushConverter()).ConvertFromString(Settings.ChunkSelectionColor);
             base.OnRender(drawingContext);
         }

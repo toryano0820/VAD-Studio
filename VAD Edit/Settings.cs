@@ -25,7 +25,8 @@ namespace VADEdit
         public static string ChunkSTTColor { get; set; } = "#00FF00";
         public static string ChunkExportColor { get; set; } = "#0000FF";
         public static string ChunkErrorColor { get; set; } = "#FF0000";
-        public static string ChunkSelectionColor { get; set; } = "#FF0000";
+        public static string ChunkSelectionColor { get; set; } = "#33000000";
+        public static string ChunkTextSelectionColor { get; set; } = "#0000FF";
         public static string AppBackgroundColor { get; set; } = "#FFFFFF";
 
         private static string configFilePath = Path.Combine(AppDomain.CurrentDomain.BaseDirectory, "config.json");
@@ -55,7 +56,8 @@ namespace VADEdit
             ChunkSTTColor = (string)(settings.ChunkSTTColor ?? "#00FF00");
             ChunkExportColor = (string)(settings.ChunkExportColor ?? "#0000FF");
             ChunkErrorColor = (string)(settings.ChunkErrorColor ?? "#FF0000");
-            ChunkSelectionColor = (string)(settings.ChunkSelectionColor ?? "#AA0000FF");
+            ChunkSelectionColor = (string)(settings.ChunkSelectionColor ?? "#330000FF");
+            ChunkTextSelectionColor = (string)(settings.ChunkTextSelectionColor ?? "#0000FF");
             AppBackgroundColor = (string)(settings.AppBackgroundColor ?? "#FFFFFF");
         }
 
@@ -84,6 +86,7 @@ namespace VADEdit
                     ChunkExportColor,
                     ChunkErrorColor,
                     ChunkSelectionColor,
+                    ChunkTextSelectionColor,
                     AppBackgroundColor
                 }, Formatting.Indented));
 

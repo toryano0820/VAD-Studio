@@ -14,9 +14,10 @@
   "AudioWaveBackgroundColor": "Black",
   "AudioWaveSelectionColor": "#390072FF",
   "ChunkTextColor": "Black",
-  "ChunkSTTColor": "#7D4BB54B",
+  "ChunkSTTColor": "#644BB54B",
   "ChunkExportColor": "#640000FF",
   "ChunkErrorColor": "#64FF0000",
-  "ChunkSelectionColor": "#64000000",
+  "ChunkSelectionColor": "#32000000",
+  "ChunkTextSelectionColor": "Blue",
   "AppBackgroundColor": "White"
 }

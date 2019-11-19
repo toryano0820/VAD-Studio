@@ -516,8 +516,8 @@ namespace VADEdit
                         {
                             Dispatcher.Invoke(() =>
                             {
-                                chunkView.GSttText = alternative.Transcript;
-                                chunkView.SpeechText = alternative.Transcript;
+                                chunkView.GSttText = alternative.Transcript.ToLower();
+                                chunkView.SpeechText = alternative.Transcript.ToLower();
                                 chunkView.VisualState = AudioChunkView.State.STTSuccess;
                                 finishedCallback?.Invoke();
                             });
