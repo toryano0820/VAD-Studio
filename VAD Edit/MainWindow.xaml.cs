@@ -444,12 +444,13 @@ namespace VADEdit
                 Dispatcher.Invoke(() =>
                 {
                     //File.AppendAllText("error.log", $"{DateTime.Now.ToString("yyyyMMddHHmmss")} [WARN]: Processing STT on audio longer than 30 seconds:\n    {streamFileName}: {chunkView.TimeRange}\n");
+                    chunkView.VisualState = AudioChunkView.State.Error;
                     Logger.Log($"Processing STT on audio longer than 30 seconds:\n    {streamFileName}: {chunkView.TimeRange}", Logger.Type.Warn);
-                    finishedCallback?.Invoke();
                     if (!suppressErrorDialogs)
                     {
                         MessageBox.Show("Will not process audio longer than 30 seconds.", "Operation Warning", MessageBoxButton.OK, MessageBoxImage.Warning);
                     }
+                    finishedCallback?.Invoke();
                 });
                 return;
             }
@@ -497,86 +498,53 @@ namespace VADEdit
                     waveStream.Position = oldPos;
                     streamBuffer.Position = 0;
 
-                    var streamingCall = speechClient.StreamingRecognize();
-
-                    streamingCall.WriteAsync(new StreamingRecognizeRequest()
-                    {
-                        StreamingConfig = new StreamingRecognitionConfig()
+                    var response = speechClient.Recognize(
+                        new RecognitionConfig()
                         {
-                            Config = new RecognitionConfig()
-                            {
-                                Encoding = RecognitionConfig.Types.AudioEncoding.Linear16,
-                                SampleRateHertz = 16000,
-                                LanguageCode = Settings.LanguageCode,
-                            }
+                            Encoding = RecognitionConfig.Types.AudioEncoding.Linear16,
+                            SampleRateHertz = 16000,
+                            LanguageCode = Settings.LanguageCode,
+                        }, new RecognitionAudio()
+                        {
+                            Content = Google.Protobuf.ByteString.CopyFrom(streamBuffer.ToArray())
                         }
-                    }).Wait();
+                    );
 
-                    streamingCall.WriteAsync(
-                        new StreamingRecognizeRequest()
-                        {
-                            AudioContent = Google.Protobuf.ByteString.CopyFrom(streamBuffer.ToArray()),
-                        }).Wait();
-
-                    streamingCall.WriteCompleteAsync().Wait();
-
-                    new Thread(async () =>
+                    foreach (var result in response.Results)
                     {
-                        try
-                        {
-                            while (await streamingCall.ResponseStream.MoveNext(default(CancellationToken)))
-                            {
-                                foreach (var result in streamingCall.ResponseStream.Current.Results)
-                                {
-                                    foreach (var alternative in result.Alternatives)
-                                    {
-                                        Dispatcher.Invoke(() =>
-                                        {
-                                            chunkView.VisualState = AudioChunkView.State.STTSuccess;
-                                            chunkView.GSttText = alternative.Transcript;
-                                            chunkView.SpeechText = alternative.Transcript;
-                                        });
-                                        return;
-                                    }
-                                }
-                            }
-                            Dispatcher.Invoke(() =>
-                            {
-                                chunkView.VisualState = AudioChunkView.State.Error;
-                            });
-
-                            throw new Exception("unrecognizable stream");
-                        }
-                        catch (Exception ex)
+                        foreach (var alternative in result.Alternatives)
                         {
                             Dispatcher.Invoke(() =>
                             {
-                                chunkView.VisualState = AudioChunkView.State.Error;
+                                chunkView.GSttText = alternative.Transcript;
+                                chunkView.SpeechText = alternative.Transcript;
+                                chunkView.VisualState = AudioChunkView.State.STTSuccess;
+                                finishedCallback?.Invoke();
                             });
-                            //File.AppendAllText("error.log", $"{DateTime.Now.ToString("yyyyMMddHHmmss")} [ERROR]: {ex.Message}:\n{ex.StackTrace}\n");
-                            Logger.Log($"{ex.Message}:\n{ex.StackTrace}", Logger.Type.Error);
-                            if (!suppressErrorDialogs)
-                            {
-                                MessageBox.Show(ex.Message, "Program Error", MessageBoxButton.OK, MessageBoxImage.Error);
-                            }
+                            return;
                         }
+                    }
 
-                        Dispatcher.Invoke(() =>
-                        {
-                            finishedCallback?.Invoke();
-                        });
-                    }).Start();
+                    throw new Exception("unrecognizable stream");
                 }
             }
             catch (TaskCanceledException) { }
             catch (Exception ex)
             {
                 //File.AppendAllText("error.log", $"{DateTime.Now.ToString("yyyyMMddHHmmss")} [ERROR]: {ex.Message}:\n{ex.StackTrace}\n");
-                Logger.Log($"{ex.Message}:\n{ex.StackTrace}", Logger.Type.Error);
-                if (!suppressErrorDialogs)
+                Dispatcher.Invoke(() =>
                 {
-                    MessageBox.Show(ex.Message, "Program Error", MessageBoxButton.OK, MessageBoxImage.Error);
-                }
+                    chunkView.VisualState = AudioChunkView.State.Error;
+                });
+                Logger.Log($"{ex.Message}:\n{ex.StackTrace}", Logger.Type.Error);
+                Dispatcher.Invoke(() =>
+                {
+                    if (!suppressErrorDialogs)
+                    {
+                        MessageBox.Show(ex.Message, "Program Error", MessageBoxButton.OK, MessageBoxImage.Error);
+                    }
+                    finishedCallback?.Invoke();
+                });
             }
         }
 

@@ -1,0 +1,22 @@
+{
+  "SplitOnSilence": true,
+  "SplitLength": 10000,
+  "MaxSilence": 300,
+  "MinVolume": 5.0,
+  "MinLength": 1000,
+  "BatchSize": 50,
+  "LanguageCode": "fil-PH",
+  "STTCredentialtPath": "service_account.json",
+  "IncludeSttResult": true,
+  "IncludeAudioFileSize": true,
+  "IncludeAudioLengthMillis": true,
+  "AudioWaveColor": "OliveDrab",
+  "AudioWaveBackgroundColor": "Black",
+  "AudioWaveSelectionColor": "#390072FF",
+  "ChunkTextColor": "Black",
+  "ChunkSTTColor": "#7D4BB54B",
+  "ChunkExportColor": "#640000FF",
+  "ChunkErrorColor": "#64FF0000",
+  "ChunkSelectionColor": "#64000000",
+  "AppBackgroundColor": "White"
+}
