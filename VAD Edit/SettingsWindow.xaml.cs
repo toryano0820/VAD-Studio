@@ -18,6 +18,11 @@ namespace VADEdit
         {
             InitializeComponent();
 
+#if !GOOGLE_STT
+            lblGoogleCredential.Visibility = Visibility.Collapsed;
+            grdGoogleCredential.Visibility = Visibility.Collapsed;
+#endif
+
             chkSplitOnSilence.IsChecked = Settings.SplitOnSilence;
             txtSplitLength.Text = Settings.SplitLength.ToString();
             txtMaxSilence.Text = Settings.MaxSilence.ToString();

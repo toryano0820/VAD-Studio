@@ -1,5 +1,10 @@
-﻿using Google.Cloud.Speech.V1;
+﻿#if GOOGLE_STT
+using Google.Cloud.Speech.V1;
+#else
+using System.Net.Http;
+#endif
 using NAudio.Wave;
+using Newtonsoft.Json;
 using System;
 using System.ComponentModel;
 using System.Diagnostics;
@@ -11,6 +16,7 @@ using System.Threading.Tasks;
 using System.Windows;
 using System.Windows.Media;
 using static VADEdit.Utils;
+using System.Collections.Generic;
 
 namespace VADEdit
 {
@@ -23,7 +29,18 @@ namespace VADEdit
 
         private AudioChunkView currentChunkView = null;
         private AudioChunkView playingChunkView = null;
+#if GOOGLE_STT
         private SpeechClient speechClient = null;
+#else
+        private HttpClient httpClient = null;
+        private Dictionary<string, string> trtisLanguages = new Dictionary<string, string>()
+        {
+            {"en-US", "en"},
+            {"fil-PH", "tl"},
+            {"th-TH", "th"},
+            {"zh-TW", "tw"},
+        };
+#endif
         private WaveStream waveStream = null;
         private string streamFileName = null;
         private bool cancelFlag = true;
@@ -53,7 +70,7 @@ namespace VADEdit
                     currentChunkView.GSttText = null;
                     currentChunkView.VisualState = AudioChunkView.State.Idle;
                 }
-                btnAddChunk.IsEnabled = false;
+                //btnAddChunk.IsEnabled = false;
             };
 
             waveView.NewSelection += delegate
@@ -69,14 +86,24 @@ namespace VADEdit
 
         internal void RenewSpeechClient()
         {
+#if GOOGLE_STT
             speechClient = SpeechClient.Create();
+#else
+            httpClient = new HttpClient();
+#endif
             GC.Collect();
         }
 
         private void SetTitle()
         {
             var version = System.Reflection.Assembly.GetExecutingAssembly().GetName().Version;
-            Title = $"VAD Edit v{version.Major}.{version.Minor}.{version.Build} [{Settings.LanguageCode}]{(string.IsNullOrWhiteSpace(streamFileName) ? "" : $" [{streamFileName}]")}";
+            var versionString = $"{version.Major}.{version.Minor}.{version.Build}";
+#if GOOGLE_STT
+            versionString += "_Google-STT";
+#else
+            versionString += "_NERA-STT";
+#endif
+            Title = $"VAD Edit v{versionString} [{Settings.LanguageCode}]{(string.IsNullOrWhiteSpace(streamFileName) ? "" : $" [{streamFileName}]")}";
         }
 
         private void Play_Clicked(object sender, RoutedEventArgs e)
@@ -234,7 +261,7 @@ namespace VADEdit
             grdTime.Children.Clear();
             currentChunkView = null;
             playingChunkView = null;
-            ShowSelection(new TimeRange(TimeSpan.Zero, TimeSpan.Zero), false);
+            ShowSelection(new TimeRange(TimeSpan.Zero, TimeSpan.Zero));
 
             txtWait.Text = "VAD processing... Please wait...";
             grdWait.Visibility = Visibility.Visible;
@@ -427,7 +454,7 @@ namespace VADEdit
             }
         }
 
-        private void DoStt(AudioChunkView chunkView, bool suppressErrorDialogs = false, Action finishedCallback = null)
+        private async void DoStt(AudioChunkView chunkView, bool suppressErrorDialogs = false, Action finishedCallback = null)
         {
             Dispatcher.Invoke(() =>
             {
@@ -498,6 +525,7 @@ namespace VADEdit
                     waveStream.Position = oldPos;
                     streamBuffer.Position = 0;
 
+#if GOOGLE_STT
                     var response = speechClient.Recognize(
                         new RecognitionConfig()
                         {
@@ -509,6 +537,24 @@ namespace VADEdit
                             Content = Google.Protobuf.ByteString.CopyFrom(streamBuffer.ToArray())
                         }
                     );
+#else
+                    var httpPayload = new MultipartFormDataContent();
+                    httpPayload.Add(new StreamContent(streamBuffer), "raw", "in.wav");
+                    var httpRsp = await httpClient.PostAsync($"http://10.24.254.166/api/sttinfer/{trtisLanguages[Settings.LanguageCode]}", httpPayload);
+                    var response = new
+                    {
+                        Results = new[] {
+                            new {
+                                Alternatives = new[] {
+                                    new {
+                                        Transcript =  (string)(JsonConvert.DeserializeObject(await httpRsp.Content.ReadAsStringAsync()) as dynamic).prediction
+                                    }
+                                }
+                            }
+                        }
+                    };
+
+#endif
 
                     foreach (var result in response.Results)
                     {
@@ -524,6 +570,7 @@ namespace VADEdit
                             return;
                         }
                     }
+
 
                     throw new Exception("unrecognizable stream");
                 }
@@ -717,7 +764,7 @@ namespace VADEdit
 
             chunkView.DeleteButtonClicked += delegate
             {
-                ShowSelection(new TimeRange(TimeSpan.Zero, TimeSpan.Zero), false);
+                ShowSelection(new TimeRange(TimeSpan.Zero, TimeSpan.Zero));
                 var index = grdTime.Children.IndexOf(chunkView);
                 grdTime.Children.Remove(chunkView);
                 if (grdTime.Children.Count > 0)
@@ -746,9 +793,8 @@ namespace VADEdit
             txtCount.Text = $"Count: {grdTime.Children.Count}";
         }
 
-        private void ShowSelection(TimeRange range, bool allowSelectionChange = true)
+        private void ShowSelection(TimeRange range)
         {
-            waveView.AllowSelectionChange = allowSelectionChange;
             waveView.SelectionStart = (range.Start.TotalMilliseconds / waveStream.TotalTime.TotalMilliseconds) * waveStream.Length;
             waveView.SelectionEnd = (range.End.TotalMilliseconds / waveStream.TotalTime.TotalMilliseconds) * waveStream.Length;
             if (waveView.Player.PlaybackState != PlaybackState.Playing)
@@ -788,7 +834,7 @@ namespace VADEdit
             {
                 cancelFlag = false;
 
-                ShowSelection(new TimeRange(TimeSpan.Zero, TimeSpan.Zero), false);
+                ShowSelection(new TimeRange(TimeSpan.Zero, TimeSpan.Zero));
                 waveView.Pause();
 
                 txtWait.Text = "STT processing... Please wait...";
@@ -808,22 +854,20 @@ namespace VADEdit
                             });
                             break;
                         }
-
-                        if (chunkView == chunkViews.Last())
+                        
+                        DoStt(chunkView, true, () =>
                         {
-                            DoStt(chunkView, true, () =>
+                            if (chunkViews.Count(cv => cv.VisualState == AudioChunkView.State.Idle) == 0)
                             {
-                                grdMain.IsEnabled = true;
                                 grdWait.Visibility = Visibility.Hidden;
-                            });
-                            break;
-                        }
-                        else
-                        {
-                            DoStt(chunkView, true);
-                        }
-
-                        Thread.Sleep(200);
+                                grdMain.IsEnabled = true;
+                            }
+                        });
+#if GOOGLE_STT
+                        //Thread.Sleep(200);
+#else
+                        Thread.Sleep(50);
+#endif
                         GC.Collect();
                     }
                 }).Start();
@@ -842,7 +886,7 @@ namespace VADEdit
             {
                 cancelFlag = false;
 
-                ShowSelection(new TimeRange(TimeSpan.Zero, TimeSpan.Zero), false);
+                ShowSelection(new TimeRange(TimeSpan.Zero, TimeSpan.Zero));
                 txtWait.Text = "Exporting... Please wait...";
                 grdWait.Visibility = Visibility.Visible;
                 grdMain.IsEnabled = false;

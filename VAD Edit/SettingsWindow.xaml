@@ -38,13 +38,13 @@
                 </GroupBox>
                 <GroupBox Header="STT Options" Margin="10,0" Height="auto" >
                     <StackPanel Margin="5">
-                        <TextBlock Text="Credential Path" Margin="0,5,0,0" VerticalAlignment="Top" HorizontalAlignment="Left" />
-                        <Grid>
+                        <TextBlock Name="lblGoogleCredential"  Text="Credential Path" Margin="0,5,0,0" VerticalAlignment="Top" HorizontalAlignment="Left" />
+                        <Grid Name="grdGoogleCredential" Margin="0,5,0,0">
                             <TextBox Name="txtSttCredentialPath" VerticalAlignment="Top" VerticalContentAlignment="Center" Height="25" Margin="0,0,29,0"/>
                             <Button Name="btnSttCredentialPath" Content="..." Padding="0,-9,0,0" VerticalAlignment="Top" HorizontalAlignment="Right" FontSize="18" Width="24" Height="25" Click="btnSttCredentialPath_Click"/>
                         </Grid>
-                        <TextBlock Margin="0,10,0,0" Text="Language Code" VerticalAlignment="Top" HorizontalAlignment="Left" />
-                        <ComboBox x:Name="cmbLanguage" VerticalContentAlignment="Center" HorizontalContentAlignment="Center" Height="25" VerticalAlignment="Top" HorizontalAlignment="Stretch" Margin="0,0,0,0">
+                        <TextBlock Margin="0,5,0,0" Text="Language Code" VerticalAlignment="Top" HorizontalAlignment="Left" />
+                        <ComboBox x:Name="cmbLanguage" VerticalContentAlignment="Center" HorizontalContentAlignment="Center" Height="25" VerticalAlignment="Top" HorizontalAlignment="Stretch" Margin="0,5,0,0">
                             <ComboBoxItem Content="en-US" />
                             <ComboBoxItem Content="fil-PH" />
                             <ComboBoxItem Content="th-TH" />

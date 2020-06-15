@@ -59,6 +59,8 @@ namespace VADEdit
             ChunkSelectionColor = (string)(settings.ChunkSelectionColor ?? "#330000FF");
             ChunkTextSelectionColor = (string)(settings.ChunkTextSelectionColor ?? "#0000FF");
             AppBackgroundColor = (string)(settings.AppBackgroundColor ?? "#FFFFFF");
+
+
         }
 
         public static void Save()

@@ -82,7 +82,7 @@ namespace VADEdit
         public static readonly DependencyProperty VisualStateProperty =
             DependencyProperty.Register("VisualState", typeof(State), typeof(AudioChunkView), new PropertyMetadata(State.Idle, (o, e) =>
             {
-                (o as AudioChunkView).InvalidateVisual();
+                (o as AudioChunkView).UpdateVisuals();
             }));
 
         private bool mouseDownTriggered = false;
@@ -214,7 +214,7 @@ namespace VADEdit
                 Keyboard.Focus(txtSpeech);
         }
 
-        protected override void OnRender(DrawingContext drawingContext)
+        public void UpdateVisuals()
         {
             switch (VisualState)
             {
@@ -233,7 +233,6 @@ namespace VADEdit
             }
             txtSpeech.SelectionBrush = (SolidColorBrush)(new BrushConverter()).ConvertFromString(Settings.ChunkTextSelectionColor);
             grdSelect.Background = (SolidColorBrush)(new BrushConverter()).ConvertFromString(Settings.ChunkSelectionColor);
-            base.OnRender(drawingContext);
         }
     }
 }
