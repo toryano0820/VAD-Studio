@@ -5,45 +5,75 @@
         xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
         xmlns:local="clr-namespace:VADEdit"
         mc:Ignorable="d"
-        Title="VAD Edit" MinHeight="600" MinWidth="1100" Height="600" Width="1100"
-        WindowStartupLocation="CenterScreen" WindowState="Maximized" Background="White">
+        Title="VAD Edit" MinHeight="600" MinWidth="1100" Height="520" Width="695"
+        WindowStartupLocation="CenterScreen" WindowState="Maximized" Background="#2D2D30">
+    <Window.CommandBindings>
+        <CommandBinding Command="New" Executed="NewProject_Click" />
+        <CommandBinding Command="Open" Executed="OpenProject_Click" />
+        <CommandBinding Command="Save" Executed="SaveProject_Click" />
+    </Window.CommandBindings>
+    <Window.InputBindings>
+        <KeyBinding Key="o" Modifiers="Ctrl" Command="Open" />
+        <KeyBinding Key="n" Modifiers="Ctrl" Command="New" />
+        <KeyBinding Key="s" Modifiers="Ctrl" Command="Save" />
+    </Window.InputBindings>
     <Grid>
-        <Grid Name="grdMain">
-            <Button Background="Transparent" Content="Load" Height="41" VerticalAlignment="Top" HorizontalAlignment="Left" Width="70" Margin="10,182,0,0" Click="Load_Clicked"/>
-            <Button Background="Transparent" xml:space="preserve" Height="41" Content="Convert&#10;&amp; Load" VerticalAlignment="Top" HorizontalAlignment="Left" Width="70" Margin="85,182,0,0" Click="Convert_Click" />
-            <Button Background="Transparent" Name="btnPlay" Content="Play" Height="41" VerticalAlignment="Top" HorizontalAlignment="Left" Width="70" Margin="185,182,0,0" Click="Play_Clicked" IsEnabled="False"/>
-            <Button Background="Transparent" Name="btnPause" Content="Pause" Height="41" VerticalAlignment="Top" HorizontalAlignment="Left" Width="70" Margin="260,182,0,0" Click="Pause_Click" IsEnabled="False"/>
-            <Button Background="Transparent" Name="btnSplit" Content="Split" Height="41" VerticalAlignment="Top" HorizontalAlignment="Right" Width="70" Margin="0,182,257,0" Click="Split_Click" IsEnabled="False"/>
-            <Button Background="Transparent" Name="btnAddChunk" IsEnabled="False" HorizontalContentAlignment="Center" Height="41" VerticalAlignment="Top" HorizontalAlignment="Right" Width="70" Margin="0,182,332,0" Click="AddChunk_Click" RenderTransformOrigin="1.014,0.439">
-                <TextBlock TextAlignment="Center">Add<LineBreak/>Chunk</TextBlock>
-            </Button>
-            <Button Background="Transparent" Name="btnSttAll" Content="STT Batch" Height="41" VerticalAlignment="Top" ToolTip="Only chunks without text value will be processed" Margin="0,182,182,0" Click="SttAll_Click" HorizontalAlignment="Right" Width="70" IsEnabled="False"/>
-            <Button Background="Transparent" Name="btnExportAll" Height="41" VerticalAlignment="Top" ToolTip="Only chunks with text value will be processed" Margin="0,182,107,0" Click="ExportAll_Click" HorizontalAlignment="Right" Width="70" IsEnabled="False">
-                <TextBlock TextAlignment="Center">Export<LineBreak/>Batch</TextBlock>
-            </Button>
-            <Button Background="Transparent" Name="btnOptions" Content="Options" Height="41" VerticalAlignment="Top" Margin="0,182,10,0" Click="Options_Click" HorizontalAlignment="Right" Width="70"/>
-            <Border BorderThickness="1" BorderBrush="Red" Margin="10,10,10,0" Height="167" VerticalAlignment="Top">
+        <Grid.RowDefinitions>
+            <RowDefinition Height="20" />
+            <RowDefinition />
+        </Grid.RowDefinitions>
+        <Menu>
+            <MenuItem Header="File">
+                <MenuItem Header="New Project" Command="New"/>
+                <MenuItem Header="Open Project ..." Command="Open"/>
+                <MenuItem Header="Save Project" Name="btnSaveProject" IsEnabled="False" Command="Save"/>
+                <Separator />
+                <MenuItem Header="Reveal in Explorer" Name="btnRevealFolder" IsEnabled="False" Click="RevealFolder_Click"/>
+                <Separator />
+                <MenuItem Header="Exit"/>
+            </MenuItem>
+            <MenuItem Header="Project">
+                <MenuItem Header="Convert &amp; Load ..." Name="btnConverLoad" IsEnabled="False" Click="ConvertLoad_Click"/>
+                <Separator />
+                <MenuItem Header="Split" Name="btnSplit" IsEnabled="False" Click="Split_Click"/>
+                <MenuItem Header="Add Chunk" Name="btnAddChunk" IsEnabled="False" Click="AddChunk_Click"/>
+                <MenuItem Header="Batch STT" Name="btnSttAll" IsEnabled="False" Click="SttAll_Click"/>
+                <MenuItem Header="Batch Export" Name="btnExportAll" IsEnabled="False" Click="ExportAll_Click"/>
+                <Separator />
+                <MenuItem Header="Find ..." IsEnabled="False" />
+            </MenuItem>
+            <MenuItem Header="Media">
+                <MenuItem Header="Play" Name="btnPlay" IsEnabled="False" Click="Play_Clicked"/>
+                <MenuItem Header="Pause" Name="btnPause" IsEnabled="False" Click="Pause_Click"/>
+            </MenuItem>
+            <MenuItem Header="Settings" Click="Options_Click"/>
+        </Menu>
+        <Grid Name="grdMain" Grid.Row="1">
+            <Grid.RowDefinitions>
+                <RowDefinition Height="180"/>
+                <RowDefinition />
+                <RowDefinition Height="30" />
+            </Grid.RowDefinitions>
+            <Border BorderThickness="1" BorderBrush="Gray" Margin="10,10,10,0" Height="167" VerticalAlignment="Top">
                 <local:WaveFormView x:Name="waveView" PlayRangeEnded="waveView_PlayRangeEnded" ClipToBounds="True"/>
             </Border>
-            <Border BorderThickness="1" BorderBrush="Gray" Margin="10,228,10,35">
+            <Border BorderThickness="1" BorderBrush="Gray" Grid.Row="1" Margin="10">
                 <ScrollViewer Name="chunkScroller" HorizontalScrollBarVisibility="Disabled" VerticalScrollBarVisibility="Auto" Focusable="False">
                     <StackPanel Name="grdTime" />
                 </ScrollViewer>
             </Border>
-            <StatusBar Background="Transparent" Height="30" VerticalAlignment="Bottom">
+            <StatusBar Background="DodgerBlue" Name="statusBar" Height="30" VerticalAlignment="Bottom" Grid.Row="2">
                 <TextBlock Name="txtCount" Text="Count: 0" Margin="10,0"/>
             </StatusBar>
-            <TextBlock HorizontalAlignment="Left" Margin="359,181,0,0" TextWrapping="Wrap" Text="Chunk Save Location" VerticalAlignment="Top"/>
-            <TextBox Background="Transparent" Name="txtChunkLocation" Height="25" Margin="359,197,429,0" TextWrapping="NoWrap" VerticalAlignment="Top" VerticalContentAlignment="Center" IsEnabled="False" IsReadOnly="True" ToolTip="{Binding Text, RelativeSource={RelativeSource Self}}"/>
         </Grid>
-        <Grid Name="grdWait" Background="#DD000000" Visibility="Hidden">
+        <Grid Name="grdWait" Background="#DD000000" Visibility="Hidden" Grid.RowSpan="3">
             <Grid  VerticalAlignment="Center" HorizontalAlignment="Center">
                 <Grid.RowDefinitions>
                     <RowDefinition />
                     <RowDefinition />
                 </Grid.RowDefinitions>
                 <TextBlock Name="txtWait" Text="Please wait..." VerticalAlignment="Center" HorizontalAlignment="Center" Foreground="White" FontSize="20"/>
-                <local:ImageButton x:Name="btnCancel" Grid.Row="2" Content="CANCEL" Height="50" Width="150" CornerRadius="10" Background="#22000000" PressedBackground="#66000000" Foreground="#22FFFFFF" MouseOverForeground="White" PressedForeground="White" Margin="0,5,0,0" Click="btnCancelLongProcess_Click"/>
+                <local:ImageButton x:Name="btnCancel" Grid.Row="2" Content="CANCEL" Height="50" Width="150" CornerRadius="10" Background="#22000000" PressedBackground="#66000000" Foreground="#22FFFFFF" MouseOverForeground="White" PressedForeground="White" Margin="0,5,0,0" Click="CancelLongProcess_Click"/>
             </Grid>
         </Grid>
     </Grid>

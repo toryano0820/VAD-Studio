@@ -19,8 +19,10 @@ namespace VADEdit
         public event EventHandler DeleteButtonClicked;
         public event EventHandler StopButtonClicked;
         public event EventHandler GotSelectionFocus;
+        public event EventHandler TextChanged;
+        public event EventHandler IndexChanged;
 
-        public enum State
+        public enum State : short
         {
             Idle,
             STTSuccess,
@@ -62,7 +64,7 @@ namespace VADEdit
             DependencyProperty.Register("SpeechText", typeof(string), typeof(AudioChunkView), new PropertyMetadata(null));
 
 
-        public string GSttText
+        public string SttText
         {
             get { return (string)GetValue(GSttTextProperty); }
             set { SetValue(GSttTextProperty, value); }
@@ -90,6 +92,9 @@ namespace VADEdit
         public AudioChunkView()
         {
             InitializeComponent();
+
+            DataContext = this;
+
             StaticFocused += delegate
             {
                 grdSelect.Visibility = Visibility.Hidden;
@@ -116,6 +121,7 @@ namespace VADEdit
                         parent.Children.Remove(this);
                         parent.Children.Insert(newIndex, this);
                         transform.Y = newY;
+                        IndexChanged?.Invoke(this, EventArgs.Empty);
                     }
                 }
                 else if (transform.Y + 2 < -Height / 2)
@@ -129,6 +135,7 @@ namespace VADEdit
                         parent.Children.Remove(this);
                         parent.Children.Insert(newIndex, this);
                         transform.Y = newY;
+                        IndexChanged?.Invoke(this, EventArgs.Empty);
                     }
                 }
             };
@@ -186,11 +193,14 @@ namespace VADEdit
         {
             if (string.IsNullOrEmpty(txtSpeech.Text))
                 txtSpeech.ToolTip = null;
-            else
+
+            if (grdSelect.IsVisible)
             {
                 txtSpeech.ToolTip = txtSpeech.Text;
                 VisualState = State.Idle;
+                TextChanged?.Invoke(this, EventArgs.Empty);
             }
+             // IsFocused
         }
 
         protected override void OnPreviewMouseLeftButtonDown(MouseButtonEventArgs e)
@@ -219,7 +229,7 @@ namespace VADEdit
             switch (VisualState)
             {
                 case State.Idle:
-                    grdBackground.Background = App.Current.MainWindow.Background;
+                    grdBackground.Background = Application.Current.MainWindow.Background;
                     break;
                 case State.STTSuccess:
                     grdBackground.Background = (SolidColorBrush)(new BrushConverter()).ConvertFromString(Settings.ChunkSTTColor);
@@ -231,6 +241,11 @@ namespace VADEdit
                     grdBackground.Background = (SolidColorBrush)(new BrushConverter()).ConvertFromString(Settings.ChunkExportColor);
                     break;
             }
+            var textColor = (SolidColorBrush)(new BrushConverter()).ConvertFromString(Settings.ChunkTextColor);
+            txtSpeech.CaretBrush = textColor;
+            txtSpeech.Foreground = textColor;
+            txtTime.Foreground = textColor;
+            txtIndex.Foreground = textColor;
             txtSpeech.SelectionBrush = (SolidColorBrush)(new BrushConverter()).ConvertFromString(Settings.ChunkTextSelectionColor);
             grdSelect.Background = (SolidColorBrush)(new BrushConverter()).ConvertFromString(Settings.ChunkSelectionColor);
         }

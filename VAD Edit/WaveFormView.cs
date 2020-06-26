@@ -163,17 +163,27 @@ namespace VADEdit
             Background = Brushes.Transparent;
             Focusable = true;
 
-            Loaded += delegate
+            Loaded += async delegate
             {
                 linePos.X1 = 0;
                 linePos.X2 = 0;
-                linePos.Visibility = Visibility.Visible;
 
                 timeView.Text = "00:00:00.00";
-                timeView.Visibility = Visibility.Visible;
 
                 Children.Add(linePos);
                 Children.Add(timeView);
+
+                await Task.Delay(100);
+                
+                var timeBgColor = ((SolidColorBrush)(new BrushConverter()).ConvertFromString(Settings.AudioWaveBackgroundColor)).Color;
+                timeBgColor.A = 200;
+                timeView.Background = new SolidColorBrush(timeBgColor);
+                timeView.Foreground = (SolidColorBrush)(new BrushConverter()).ConvertFromString(Settings.AudioWaveColor);
+                SetLeft(timeView, 0);
+                SetTop(timeView, ActualHeight - timeView.ActualHeight);
+
+                linePos.Visibility = Visibility.Visible;
+                timeView.Visibility = Visibility.Visible;
             };
 
             SizeChanged += delegate
@@ -183,13 +193,13 @@ namespace VADEdit
             };
         }
 
-        public void SetWaveStream(WaveStream waveStream, Action<bool> callback = null)
+        public async Task SetWaveStream(WaveStream waveStream, Action<bool> callback = null)
         {
             WaveStream = null;
             WaveFormData = null;
             InvalidateVisual();
 
-            new Thread(() =>
+            var thread = new Thread(() =>
             {
                 try
                 {
@@ -289,7 +299,10 @@ namespace VADEdit
                     InvalidateVisual();
                     callback?.Invoke(WaveStream != null);
                 });
-            }).Start();
+            });
+            thread.Start();
+            while (thread.IsAlive)
+                await Task.Delay(10);
         }
 
         private void StartRenderPositionLine()
@@ -372,6 +385,8 @@ namespace VADEdit
 
                 var visibleSample = WaveFormData.ToList().GetRange((int)(sampleSize * ScrollOffset), Math.Min((int)(sampleSize * (ActualWidth + 1)), waveSize));
 
+                var pen = new Pen((SolidColorBrush)(new BrushConverter()).ConvertFromString(Settings.AudioWaveColor), 1);
+
                 for (int i = 0; i < ActualWidth && (sampleSize * i) + sampleSize < visibleSample.Count(); i++)
                 {
                     var sample = visibleSample.GetRange((int)(sampleSize * i), (int)(sampleSize)).ToArray();
@@ -379,7 +394,7 @@ namespace VADEdit
                     if (sample.Length > 0)
                     {
                         drawingContext.DrawLine(
-                            new Pen((SolidColorBrush)(new BrushConverter()).ConvertFromString(Settings.AudioWaveColor), 1),
+                            pen,
                             new Point(i + 1, drawCenter + (-sample.Max() * multiplier)),
                             new Point(i + 1, drawCenter + (-sample.Min() * multiplier)));
                     }

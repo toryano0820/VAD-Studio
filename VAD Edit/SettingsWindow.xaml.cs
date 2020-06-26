@@ -1,4 +1,5 @@
-﻿using System;
+﻿using Microsoft.WindowsAPICodePack.Dialogs;
+using System;
 using System.Globalization;
 using System.IO;
 using System.Windows;
@@ -17,6 +18,8 @@ namespace VADEdit
         public SettingsWindow()
         {
             InitializeComponent();
+
+            Owner = App.Current.MainWindow;
 
 #if !GOOGLE_STT
             lblGoogleCredential.Visibility = Visibility.Collapsed;
@@ -44,6 +47,7 @@ namespace VADEdit
             clrChunkSelection.SelectedColor = (Color)ColorConverter.ConvertFromString(Settings.ChunkSelectionColor);
             clrChunkTextSelection.SelectedColor = (Color)ColorConverter.ConvertFromString(Settings.ChunkTextSelectionColor);
             clrAppBackground.SelectedColor = (Color)ColorConverter.ConvertFromString(Settings.AppBackgroundColor);
+            txtProjectBaseLocation.Text = Settings.ProjectBaseLocation;
 
             txtMaxSilence.PreviewTextInput += (o, e) =>
             {
@@ -138,6 +142,7 @@ namespace VADEdit
                 Settings.ChunkSelectionColor = win.clrChunkSelection.SelectedColorText;
                 Settings.ChunkTextSelectionColor = win.clrChunkTextSelection.SelectedColorText;
                 Settings.AppBackgroundColor = win.clrAppBackground.SelectedColorText;
+                Settings.ProjectBaseLocation = win.txtProjectBaseLocation.Text;
                 Settings.Save();
             }
         }
@@ -145,36 +150,51 @@ namespace VADEdit
         private void OK_Click(object sender, RoutedEventArgs e)
         {
             DialogResult = true;
-            Close();
         }
 
         private void Cancel_Click(object sender, RoutedEventArgs e)
         {
-            Close();
+            DialogResult = false;
         }
 
         private void btnSttCredentialPath_Click(object sender, RoutedEventArgs e)
         {
-            var appDir = AppDomain.CurrentDomain.BaseDirectory;
             var dlg = new System.Windows.Forms.OpenFileDialog()
             {
                 Filter = "JSON Files|*.json",
-                InitialDirectory = appDir
+                InitialDirectory = App.AppDir
             };
             var res = dlg.ShowDialog();
             if (res == System.Windows.Forms.DialogResult.OK)
             {
-                var fileDir = dlg.FileName;
-                if (fileDir.StartsWith(appDir))
-                    fileDir = fileDir.Substring(appDir.Length);
+                var fileDir = Utils.GetRelativePath(App.AppDir, dlg.FileName);
                 txtSttCredentialPath.Text = fileDir;
             }
             dlg.Dispose();
         }
 
-        private void btnChangeColor_Click(object sender, RoutedEventArgs e)
+        private void btnProjectBaseLocation_Click(object sender, RoutedEventArgs e)
         {
-            //new ColorPicker().
+            var dlg = new CommonOpenFileDialog()
+            {
+                Title = "Project Base Location",
+                InitialDirectory = Settings.ProjectBaseLocation,
+                IsFolderPicker = true,
+                AddToMostRecentlyUsedList = false,
+                AllowNonFileSystemItems = false,
+                EnsureFileExists = true,
+                EnsurePathExists = true,
+                EnsureReadOnly = false,
+                EnsureValidNames = true,
+                Multiselect = false,
+                ShowPlacesList = true
+            };
+            var res = dlg.ShowDialog();
+            if (res == CommonFileDialogResult.Ok)
+            {
+                txtProjectBaseLocation.Text = dlg.FileName;
+            }
+            dlg.Dispose();
         }
     }
 

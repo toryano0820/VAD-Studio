@@ -10,7 +10,6 @@
         mc:Ignorable="d"
         Title="Options" Width="600" Height="700" WindowStyle="ToolWindow" WindowStartupLocation="CenterOwner" ShowInTaskbar="False">
     <Window.Resources>
-        <sys:Double x:Key="labelWidth">120</sys:Double>
         <local:FalseToCollapsed x:Key="showOnCheck"/>
         <local:TrueToCollapsed x:Key="hideOnCheck"/>
     </Window.Resources>
@@ -21,6 +20,15 @@
         </Grid.RowDefinitions>
         <ScrollViewer VerticalScrollBarVisibility="Auto" Margin="0,10,0,0">
             <StackPanel Height="auto" VerticalAlignment="Top">
+                <GroupBox Header="STT Options" Margin="10,0" Height="auto" >
+                    <StackPanel Margin="5">
+                        <TextBlock  Text="Default Project Location" Margin="0,5,0,0" VerticalAlignment="Top" HorizontalAlignment="Left" />
+                        <Grid Margin="0,5,0,0">
+                            <TextBox Name="txtProjectBaseLocation" VerticalAlignment="Top" VerticalContentAlignment="Center" IsReadOnly="True" Height="25" Margin="0,0,29,0"/>
+                            <Button Name="btnProjectBaseLocation" Content="..." Padding="0,-9,0,0" VerticalAlignment="Top" HorizontalAlignment="Right" FontSize="18" Width="24" Height="25" Click="btnProjectBaseLocation_Click"/>
+                        </Grid>
+                    </StackPanel>
+                </GroupBox>
                 <GroupBox Header="Split Options" Margin="10,0" Height="auto" VerticalAlignment="Top">
                     <StackPanel Margin="5">
                         <CheckBox Name="chkSplitOnSilence" Margin="0,5,0,0" Content="Split on Silence" VerticalAlignment="Top" IsChecked="True"/>

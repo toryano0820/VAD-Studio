@@ -15,6 +15,8 @@ namespace VADEdit
     /// </summary>
     public partial class App : Application
     {
+        public static string AppDir = AppDomain.CurrentDomain.BaseDirectory;
+
         protected override void OnStartup(StartupEventArgs e)
         {
             Logger.Initialize();

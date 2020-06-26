@@ -5,6 +5,7 @@ using System.IO;
 using System.Net;
 using System.Reflection;
 using System.Runtime.InteropServices;
+using System.Text;
 using System.Threading;
 using System.Windows;
 using System.Windows.Data;
@@ -16,7 +17,7 @@ namespace VADEdit
 {
     public static class Utils
     {
-        #region network
+        #region Network
 
         public static bool IsNetworkAvailable()
         {
@@ -35,6 +36,7 @@ namespace VADEdit
         }
         #endregion
 
+        #region Generator
         public static IEnumerable<int> Range(int start, int end, int step = 1)
         {
             for (int i = start; (step > 0 && i < end) || (step < 0 && i > end); i += step)
@@ -45,7 +47,9 @@ namespace VADEdit
         {
             return Range(0, end);
         }
+        #endregion
 
+        #region Assert
         public static void Assert(bool condition, Exception exception = null)
         {
             if (condition)
@@ -77,6 +81,51 @@ namespace VADEdit
                 throw exception;
             }
         }
+        #endregion
+
+        #region Path
+        public static string GetRelativePath(string fromPath, string toPath)
+        {
+            int fromAttr = GetPathAttribute(fromPath);
+            int toAttr = GetPathAttribute(toPath);
+
+            StringBuilder path = new StringBuilder(260); // MAX_PATH
+            if (PathRelativePathTo(
+                path,
+                fromPath,
+                fromAttr,
+                toPath,
+                toAttr) == 0)
+            {
+                throw new ArgumentException("Paths must have a common prefix");
+            }
+            return path.ToString();
+        }
+
+        private static int GetPathAttribute(string path)
+        {
+            DirectoryInfo di = new DirectoryInfo(path);
+            if (di.Exists)
+            {
+                return FILE_ATTRIBUTE_DIRECTORY;
+            }
+
+            FileInfo fi = new FileInfo(path);
+            if (fi.Exists)
+            {
+                return FILE_ATTRIBUTE_NORMAL;
+            }
+
+            throw new FileNotFoundException();
+        }
+
+        private const int FILE_ATTRIBUTE_DIRECTORY = 0x10;
+        private const int FILE_ATTRIBUTE_NORMAL = 0x80;
+
+        [DllImport("shlwapi.dll", SetLastError = true)]
+        private static extern int PathRelativePathTo(StringBuilder pszPath,
+            string pszFrom, int dwAttrFrom, string pszTo, int dwAttrTo);
+        #endregion
 
         #region Logger
         public static class Logger
@@ -194,6 +243,19 @@ namespace VADEdit
 #region IValueConverters
 namespace VADEdit.Converters
 {
+    public class Times2ValueConverter : IValueConverter
+    {
+        public object Convert(object value, Type targetType, object parameter, CultureInfo culture)
+        {
+            return (double)value * 2;
+        }
+
+        public object ConvertBack(object value, Type targetType, object parameter, CultureInfo culture)
+        {
+            throw new NotImplementedException();
+        }
+    }
+
     public class NegateVisibility : IValueConverter
     {
         public object Convert(object value, Type targetType, object parameter, CultureInfo culture)

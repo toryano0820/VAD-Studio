@@ -28,8 +28,11 @@ namespace VADEdit
         public static string ChunkSelectionColor { get; set; } = "#33000000";
         public static string ChunkTextSelectionColor { get; set; } = "#0000FF";
         public static string AppBackgroundColor { get; set; } = "#FFFFFF";
+        public static string ProjectBaseLocation { get; set; } = "c:\\sentence_extractor";
+        public static string LastMediaLocation { get; set; } = "c:\\";
+        public static string KinpoSttInferHost { get; set; } = "http://10.24.254.166";
 
-        private static string configFilePath = Path.Combine(AppDomain.CurrentDomain.BaseDirectory, "config.json");
+        private static string configFilePath = Path.Combine(App.AppDir, "config.json");
 
         static Settings()
         {
@@ -59,8 +62,9 @@ namespace VADEdit
             ChunkSelectionColor = (string)(settings.ChunkSelectionColor ?? "#330000FF");
             ChunkTextSelectionColor = (string)(settings.ChunkTextSelectionColor ?? "#0000FF");
             AppBackgroundColor = (string)(settings.AppBackgroundColor ?? "#FFFFFF");
-
-
+            LastMediaLocation = (string)(settings.LastMediaLocation ?? "c:\\");
+            ProjectBaseLocation = (string)(settings.ProjectBaseLocation ?? "c:\\sentence_extractor");
+            KinpoSttInferHost = (string)(settings.KinpoSttInferHost ?? "http://10.24.254.166");
         }
 
         public static void Save()
@@ -89,7 +93,9 @@ namespace VADEdit
                     ChunkErrorColor,
                     ChunkSelectionColor,
                     ChunkTextSelectionColor,
-                    AppBackgroundColor
+                    AppBackgroundColor,
+                    LastMediaLocation,
+                    ProjectBaseLocation
                 }, Formatting.Indented));
 
             var appDir = AppDomain.CurrentDomain.BaseDirectory;

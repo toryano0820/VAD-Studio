@@ -17,6 +17,7 @@ using System.Windows;
 using System.Windows.Media;
 using static VADEdit.Utils;
 using System.Collections.Generic;
+using System.Configuration;
 
 namespace VADEdit
 {
@@ -25,8 +26,6 @@ namespace VADEdit
     /// </summary>
     public partial class MainWindow : Window
     {
-        private string OutputBasePath { get; } = Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.MyDocuments), "sentence_extractor");
-
         private AudioChunkView currentChunkView = null;
         private AudioChunkView playingChunkView = null;
 #if GOOGLE_STT
@@ -42,14 +41,49 @@ namespace VADEdit
         };
 #endif
         private WaveStream waveStream = null;
-        private string streamFileName = null;
+
+        private string projectLocation = null;
+        private string projectFileLocation = null;
+        private string sourceLocation = null;
+        private string wavLocation = null;
         private bool cancelFlag = true;
+        private ProjectConfig projectConfig = null;
+        private bool _Modified = false;
+        private bool Modified
+        {
+            get
+            {
+                return _Modified;
+            }
+            set
+            {
+                _Modified = value;
+                if (value)
+                {
+                    statusBar.Background = Brushes.OrangeRed;
+                }
+                else
+                {
+                    statusBar.Background = Brushes.DodgerBlue;
+                }
+
+                btnSaveProject.IsEnabled = value;
+            }
+        }
 
         public MainWindow()
         {
             InitializeComponent();
 
             Application.Current.MainWindow = this;
+
+            AppDomain.CurrentDomain.UnhandledException += (o, e) =>
+            {
+                var ex = e.ExceptionObject as Exception;
+                MessageBox.Show(ex.GetType().ToString() + ":\n" + ex.Message + "\n" + ex.StackTrace, "Unhandled Program Error", MessageBoxButton.OK, MessageBoxImage.Error);
+                
+            };
+
             Background = (SolidColorBrush)(new BrushConverter()).ConvertFromString(Settings.AppBackgroundColor);
 
             SetTitle();
@@ -67,8 +101,9 @@ namespace VADEdit
                 {
                     currentChunkView.TimeRange = e;
                     waveView.PlayRangeEnd = currentChunkView.TimeRange.End;
-                    currentChunkView.GSttText = null;
+                    currentChunkView.SttText = null;
                     currentChunkView.VisualState = AudioChunkView.State.Idle;
+                    Modified = true;
                 }
                 //btnAddChunk.IsEnabled = false;
             };
@@ -81,7 +116,9 @@ namespace VADEdit
             Loaded += delegate
             {
                 //this.EnableBlur();
+                Modified = Modified;
             };
+
         }
 
         internal void RenewSpeechClient()
@@ -103,7 +140,7 @@ namespace VADEdit
 #else
             versionString += "_NERA-STT";
 #endif
-            Title = $"VAD Edit v{versionString} [{Settings.LanguageCode}]{(string.IsNullOrWhiteSpace(streamFileName) ? "" : $" [{streamFileName}]")}";
+            Title = $"VAD Edit v{versionString} [{Settings.LanguageCode}]{(string.IsNullOrWhiteSpace(projectLocation) ? "" : $" [{projectLocation}]")}";
         }
 
         private void Play_Clicked(object sender, RoutedEventArgs e)
@@ -111,14 +148,9 @@ namespace VADEdit
             waveView.Play();
         }
 
-        private void Load_Clicked(object sender, RoutedEventArgs e)
+        private async Task LoadStream(string filePath, Func<Task> beforeHideWaitPanel=null)
         {
-            Load();
-        }
-
-        private void LoadStream(string filePath)
-        {
-            streamFileName = filePath;
+            sourceLocation = filePath;
             var fileName = filePath.Replace(@"\", "/").Split('/').Last();
             txtCount.Text = $"Count: 0";
             grdTime.Children.Clear();
@@ -130,27 +162,23 @@ namespace VADEdit
             btnCancel.Visibility = Visibility.Collapsed;
             btnSplit.IsEnabled = true;
             GC.Collect();
-
-            waveView.SetWaveStream(new NAudio.Wave.WaveFileReader(filePath), (success) =>
+            await waveView.SetWaveStream(new NAudio.Wave.WaveFileReader(filePath), async (success) =>
             {
                 btnExportAll.IsEnabled = false;
                 btnSttAll.IsEnabled = false;
 
                 if (success)
                 {
-                    txtChunkLocation.Text = System.IO.Path.Combine(OutputBasePath, fileName.Substring(0, fileName.Length - 4));
-                    Directory.CreateDirectory(txtChunkLocation.Text);
                     SetTitle();
 
                     btnPause.IsEnabled = true;
                     btnPlay.IsEnabled = true;
-                    txtChunkLocation.IsEnabled = true;
                     waveStream = waveView.WaveStream;
                 }
                 else
                 {
-                    txtChunkLocation.Text = null;
-                    streamFileName = null;
+                    projectLocation = null;
+                    sourceLocation = null;
                     SetTitle();
 
                     btnPause.IsEnabled = false;
@@ -158,8 +186,10 @@ namespace VADEdit
                     btnSplit.IsEnabled = false;
                     btnSttAll.IsEnabled = false;
                     btnExportAll.IsEnabled = false;
-                    txtChunkLocation.IsEnabled = false;
                 }
+
+                if (beforeHideWaitPanel != null)
+                    await beforeHideWaitPanel.Invoke();
 
                 grdMain.IsEnabled = true;
                 grdWait.Visibility = Visibility.Hidden;
@@ -167,90 +197,99 @@ namespace VADEdit
             });
         }
 
-        private void Load()
+        private async void ConvertLoad_Click(object sender, RoutedEventArgs args)
         {
             waveView.Pause();
 
             var dlg = new System.Windows.Forms.OpenFileDialog()
             {
-                Filter = "WAVE Audio Files|*.wav"
+                Filter = "Media Files|*.wav;*.mp3;*.flac;*.mp4;*.avi;*.flv",
+                InitialDirectory = Settings.LastMediaLocation,
+                Title = "Load Media"
             };
             var res = dlg.ShowDialog();
             if (res == System.Windows.Forms.DialogResult.OK)
             {
-                btnAddChunk.IsEnabled = false;
-                LoadStream(dlg.FileName);
+                sourceLocation = dlg.FileName;
+                await ConvertLoad();
             }
             dlg.Dispose();
+            GC.Collect();
         }
 
-        private void ConvertLoad()
+        private async Task ConvertLoad()
         {
-            waveView.Pause();
+            txtCount.Text = $"Count: 0";
+            grdTime.Children.Clear();
+            currentChunkView = null;
+            playingChunkView = null;
+            txtWait.Text = "Converting to WAV... Please wait...";
+            grdWait.Visibility = Visibility.Visible;
+            btnCancel.Visibility = Visibility.Collapsed;
+            grdMain.IsEnabled = false;
+            btnConverLoad.IsEnabled = false;
+            btnAddChunk.IsEnabled = false;
 
-            var dlg = new System.Windows.Forms.OpenFileDialog()
-            {
-                Filter = "Media Files|*.wav;*.mp3;*.flac;*.mp4;*.avi;*.flv"
-            };
-            var res = dlg.ShowDialog();
-            if (res == System.Windows.Forms.DialogResult.OK)
-            {
-                txtCount.Text = $"Count: 0";
-                grdTime.Children.Clear();
-                currentChunkView = null;
-                playingChunkView = null;
-                txtWait.Text = "Converting to WAV... Please wait...";
-                grdWait.Visibility = Visibility.Visible;
-                btnCancel.Visibility = Visibility.Collapsed;
-                grdMain.IsEnabled = false;
-                btnAddChunk.IsEnabled = false;
-                var chunkSaveLocation = System.IO.Path.Combine(OutputBasePath, dlg.SafeFileName.Substring(0, dlg.SafeFileName.Length - 4));
-                while (File.Exists(chunkSaveLocation + ".wav"))
-                {
-                    if (Regex.IsMatch(chunkSaveLocation, @"_\d+$"))
-                        chunkSaveLocation = Regex.Replace(chunkSaveLocation, @"_\d+$", "_" + (int.Parse(chunkSaveLocation.Split('_').Last()) + 1).ToString());
-                    else
-                        chunkSaveLocation = chunkSaveLocation + "_1";
-                }
-                Directory.CreateDirectory(OutputBasePath);
-                GC.Collect();
+            await Task.Delay(100);
 
-                new Thread(() =>
+            Settings.LastMediaLocation = Path.GetDirectoryName(sourceLocation);
+            Settings.Save();
+            var baseFileName = Path.GetFileNameWithoutExtension(sourceLocation);
+            wavLocation = Path.Combine(projectLocation, baseFileName);
+            while (File.Exists(wavLocation + ".wav"))
+            {
+                if (Regex.IsMatch(wavLocation, @"_\d+$"))
+                    wavLocation = Regex.Replace(wavLocation, @"_\d+$", "_" + (int.Parse(wavLocation.Split('_').Last()) + 1).ToString());
+                else
+                    wavLocation = wavLocation + "_1";
+            }
+            GC.Collect();
+
+            wavLocation = wavLocation + ".wav";
+
+            var thread = new Thread(() =>
+            {
+                try
                 {
-                    try
-                    {
-                        var ffmpeg = new Process();
+                    var ffmpeg = new Process();
 #if false //DEBUG
                         ffmpeg.StartInfo.FileName = "cmd.exe";
                         ffmpeg.StartInfo.Arguments = $"/K ffmpeg.exe -y -i \"{dlg.FileName}\" -c copy -vn -acodec pcm_s16le -ar 16000 -ac 1 \"{chunkSaveLocation}.wav\"";
                         ffmpeg.StartInfo.WindowStyle = ProcessWindowStyle.Normal;
 #else
-                        ffmpeg.StartInfo.FileName = Path.Combine(AppDomain.CurrentDomain.BaseDirectory, "ffmpeg.exe ");
-                        ffmpeg.StartInfo.Arguments = $"-y -i \"{dlg.FileName}\" -c copy -vn -acodec pcm_s16le -ar 16000 -ac 1 \"{chunkSaveLocation}.wav\"";
-                        ffmpeg.StartInfo.WindowStyle = ProcessWindowStyle.Hidden;
+                    ffmpeg.StartInfo.FileName = Path.Combine(AppDomain.CurrentDomain.BaseDirectory, "ffmpeg.exe ");
+                    ffmpeg.StartInfo.Arguments = $"-y -i \"{sourceLocation}\" -c copy -vn -acodec pcm_s16le -ar 16000 -ac 1 \"{wavLocation}\"";
+                    ffmpeg.StartInfo.WindowStyle = ProcessWindowStyle.Hidden;
 #endif
-                        ffmpeg.StartInfo.UseShellExecute = true;
-                        ffmpeg.Start();
-                        ffmpeg.WaitForExit();
+                    ffmpeg.StartInfo.UseShellExecute = true;
+                    ffmpeg.Start();
+                    ffmpeg.WaitForExit();
 
-                        if (ffmpeg.ExitCode == 0)
-                        {
-                            Dispatcher.Invoke(() =>
-                            {
-                                LoadStream(chunkSaveLocation + ".wav");
-                            });
-                        }
-                    }
-                    catch (TaskCanceledException) { }
-                    catch (Exception ex)
+                    if (ffmpeg.ExitCode == 0)
                     {
-                        //File.AppendAllText("error.log", $"{DateTime.Now.ToString("yyyyMMddHHmmss")} [ERROR]: {ex.Message}:\n{ex.StackTrace}\n");
-                        Logger.Log($"{ex.Message}:\n{ex.StackTrace}", Logger.Type.Error);
-                        MessageBox.Show(ex.Message, "Program Error", MessageBoxButton.OK, MessageBoxImage.Error);
+                        Dispatcher.Invoke(async () =>
+                        {
+                            await LoadStream(wavLocation);
+                            Modified = true;
+                        });
                     }
-                }).Start();
-            }
-            dlg.Dispose();
+                }
+                catch (TaskCanceledException) { }
+                catch (Exception ex)
+                {
+                    //File.AppendAllText("error.log", $"{DateTime.Now.ToString("yyyyMMddHHmmss")} [ERROR]: {ex.Message}:\n{ex.StackTrace}\n");
+                    Logger.Log($"{ex.Message}:\n{ex.StackTrace}", Logger.Type.Error);
+                    Dispatcher.Invoke(() =>
+                    {
+                        MessageBox.Show(ex.Message, "Program Error", MessageBoxButton.OK, MessageBoxImage.Error);
+                        btnConverLoad.IsEnabled = true;
+                    });
+                }
+            });
+            thread.Start();
+
+            while (thread.IsAlive)
+                await Task.Delay(10);
         }
 
         private void SplitSilence()
@@ -310,10 +349,10 @@ namespace VADEdit
 
                                 if (end - start > minLength)
                                 {
-                                    Thread.Sleep(10);
+                                    Thread.Sleep(5);
                                     Dispatcher.Invoke(() =>
                                     {
-                                        AddItemView(new TimeRange(TimeSpan.FromMilliseconds(start), TimeSpan.FromMilliseconds(end)));
+                                        AddChunkView(new TimeRange(TimeSpan.FromMilliseconds(start), TimeSpan.FromMilliseconds(end)));
                                     });
                                 }
 
@@ -331,10 +370,10 @@ namespace VADEdit
 
                                         if (end - start > minLength)
                                         {
-                                            Thread.Sleep(10);
+                                            Thread.Sleep(5);
                                             Dispatcher.Invoke(() =>
                                             {
-                                                AddItemView(new TimeRange(TimeSpan.FromMilliseconds(start), TimeSpan.FromMilliseconds(end)));
+                                                AddChunkView(new TimeRange(TimeSpan.FromMilliseconds(start), TimeSpan.FromMilliseconds(end)));
                                             });
                                         }
                                     }
@@ -409,7 +448,7 @@ namespace VADEdit
                                 end = (int)waveTotalMillis;
                             Dispatcher.Invoke(() =>
                             {
-                                AddItemView(new TimeRange(TimeSpan.FromMilliseconds(waveMillisCounter), TimeSpan.FromMilliseconds(end)));
+                                AddChunkView(new TimeRange(TimeSpan.FromMilliseconds(waveMillisCounter), TimeSpan.FromMilliseconds(end)));
                             });
 
                             waveMillisCounter += splitLength;
@@ -441,7 +480,7 @@ namespace VADEdit
 
         private string GetNextFileName()
         {
-            var chunkSaveLocation = Dispatcher.Invoke(() => txtChunkLocation.Text);
+            var chunkSaveLocation = Dispatcher.Invoke(() => projectLocation);
             var fileNames = Directory.EnumerateFiles(chunkSaveLocation, "*.wav").Select(s => s.Replace(@"\", "/").Split('/').Last());
             int i = 0;
             while (true)
@@ -465,17 +504,17 @@ namespace VADEdit
 
             var startSecond = Dispatcher.Invoke(() => chunkView.TimeRange.Start.TotalSeconds);
             var endSecond = Dispatcher.Invoke(() => chunkView.TimeRange.End.TotalSeconds);
+            var maxSeconds = int.Parse(ConfigurationManager.AppSettings.Get("MaxSeconds"));
 
-            if (endSecond - startSecond > 30)
+            if (endSecond - startSecond > maxSeconds)
             {
                 Dispatcher.Invoke(() =>
                 {
-                    //File.AppendAllText("error.log", $"{DateTime.Now.ToString("yyyyMMddHHmmss")} [WARN]: Processing STT on audio longer than 30 seconds:\n    {streamFileName}: {chunkView.TimeRange}\n");
                     chunkView.VisualState = AudioChunkView.State.Error;
-                    Logger.Log($"Processing STT on audio longer than 30 seconds:\n    {streamFileName}: {chunkView.TimeRange}", Logger.Type.Warn);
+                    Logger.Log($"Processing STT on audio longer than {maxSeconds} seconds:\n    {sourceLocation}: {chunkView.TimeRange}", Logger.Type.Warn);
                     if (!suppressErrorDialogs)
                     {
-                        MessageBox.Show("Will not process audio longer than 30 seconds.", "Operation Warning", MessageBoxButton.OK, MessageBoxImage.Warning);
+                        MessageBox.Show($"Will not process audio longer than {maxSeconds} seconds.", "Operation Warning", MessageBoxButton.OK, MessageBoxImage.Warning);
                     }
                     finishedCallback?.Invoke();
                 });
@@ -540,7 +579,7 @@ namespace VADEdit
 #else
                     var httpPayload = new MultipartFormDataContent();
                     httpPayload.Add(new StreamContent(streamBuffer), "raw", "in.wav");
-                    var httpRsp = await httpClient.PostAsync($"http://10.24.254.166/api/sttinfer/{trtisLanguages[Settings.LanguageCode]}", httpPayload);
+                    var httpRsp = await httpClient.PostAsync($"{Settings.KinpoSttInferHost}/api/sttinfer/{trtisLanguages[Settings.LanguageCode]}", httpPayload);
                     var response = new
                     {
                         Results = new[] {
@@ -562,7 +601,7 @@ namespace VADEdit
                         {
                             Dispatcher.Invoke(() =>
                             {
-                                chunkView.GSttText = alternative.Transcript.ToLower();
+                                chunkView.SttText = alternative.Transcript.ToLower();
                                 chunkView.SpeechText = alternative.Transcript.ToLower();
                                 chunkView.VisualState = AudioChunkView.State.STTSuccess;
                                 finishedCallback?.Invoke();
@@ -607,9 +646,9 @@ namespace VADEdit
                 }
             });
 
-            var chunkLocation = Dispatcher.Invoke(() => txtChunkLocation.Text);
+            var chunkLocation = Dispatcher.Invoke(() => projectLocation);
             var speechText = Dispatcher.Invoke(() => chunkView.SpeechText);
-            var gSttText = Dispatcher.Invoke(() => chunkView.GSttText);
+            var gSttText = Dispatcher.Invoke(() => chunkView.SttText);
 
             if (!string.IsNullOrWhiteSpace(speechText))
             {
@@ -693,15 +732,22 @@ namespace VADEdit
             }
         }
 
-        private async void AddItemView(TimeRange timeRange, string gSttText = null, string speechText = null, int insertIndex = -1, bool focus = false)
+        private async void AddChunkView(TimeRange timeRange, string gSttText = null, string speechText = null, int insertIndex = -1, bool focus = false)
         {
             var chunkView = new AudioChunkView()
             {
                 TimeRange = timeRange,
-                GSttText = gSttText,
+                SttText = gSttText,
                 SpeechText = speechText
             };
 
+            AddChunkView(chunkView, insertIndex, focus);
+
+            await Task.Yield();
+        }
+
+        private async void AddChunkView(AudioChunkView chunkView, int insertIndex = -1, bool focus = false)
+        {
             chunkView.PlayButtonClicked += delegate
             {
                 ShowSelection(chunkView.TimeRange);
@@ -740,26 +786,26 @@ namespace VADEdit
                 grdWait.Visibility = Visibility.Visible;
                 btnCancel.Visibility = Visibility.Collapsed;
                 grdMain.IsEnabled = false;
-
-                new Thread(() =>
+                DoStt(chunkView, finishedCallback: () =>
                 {
-                    DoStt(chunkView, finishedCallback: () =>
-                    {
-                        grdMain.IsEnabled = true;
-                        grdWait.Visibility = Visibility.Hidden;
-                        btnCancel.Visibility = Visibility.Visible;
-                    });
-                }).Start();
+                    grdMain.IsEnabled = true;
+                    grdWait.Visibility = Visibility.Hidden;
+                    btnCancel.Visibility = Visibility.Visible;
+                    Modified = true;
+                });
             };
 
             chunkView.DuplicateButtonClicked += delegate
             {
-                AddItemView(chunkView.TimeRange, chunkView.GSttText, chunkView.SpeechText, grdTime.Children.IndexOf(chunkView) + 1);
+                AddChunkView(chunkView.TimeRange, chunkView.SttText, chunkView.SpeechText, grdTime.Children.IndexOf(chunkView) + 1);
+                Modified = true;
             };
 
             chunkView.ExportButtonClicked += delegate
             {
                 DoExport(chunkView);
+
+                Modified = true;
             };
 
             chunkView.DeleteButtonClicked += delegate
@@ -775,6 +821,17 @@ namespace VADEdit
                     btnSttAll.IsEnabled = false;
                 }
                 txtCount.Text = $"Count: {grdTime.Children.Count}";
+                Modified = true;
+            };
+
+            chunkView.TextChanged += delegate
+            {
+                Modified = true;
+            };
+
+            chunkView.IndexChanged += delegate
+            {
+                Modified = true;
             };
 
             if (insertIndex == -1)
@@ -790,16 +847,20 @@ namespace VADEdit
                 chunkScroller.BringIntoView();
             }
 
+            chunkView.UpdateVisuals();
+
             txtCount.Text = $"Count: {grdTime.Children.Count}";
         }
 
         private void ShowSelection(TimeRange range)
         {
-            waveView.SelectionStart = (range.Start.TotalMilliseconds / waveStream.TotalTime.TotalMilliseconds) * waveStream.Length;
-            waveView.SelectionEnd = (range.End.TotalMilliseconds / waveStream.TotalTime.TotalMilliseconds) * waveStream.Length;
+            var totalMs = waveStream.TotalTime.TotalMilliseconds;
+            var lenWs = waveStream.Length;
+            waveView.SelectionStart = (range.Start.TotalMilliseconds / totalMs) * lenWs;
+            waveView.SelectionEnd = (range.End.TotalMilliseconds / totalMs) * lenWs;
             if (waveView.Player.PlaybackState != PlaybackState.Playing)
             {
-                waveStream.Position = (int)waveView.SelectionStart;
+                waveStream.Position = (long)waveView.SelectionStart;
                 waveView.RenderPositionLine(true);
             }
             waveView.InvalidateVisual();
@@ -810,16 +871,12 @@ namespace VADEdit
             if (grdTime.Children.Count > 0 && MessageBox.Show("Existing chunks will be overwritten.\nContinue?", "Operation Confirmation", MessageBoxButton.YesNo, MessageBoxImage.Question) == MessageBoxResult.No)
                 return;
             SplitSilence();
+            Modified = true;
         }
 
         private void Pause_Click(object sender, RoutedEventArgs e)
         {
             waveView.Pause();
-        }
-
-        private void Convert_Click(object sender, RoutedEventArgs e)
-        {
-            ConvertLoad();
         }
 
         private void SttAll_Click(object sender, RoutedEventArgs e)
@@ -851,10 +908,11 @@ namespace VADEdit
                             {
                                 grdMain.IsEnabled = true;
                                 grdWait.Visibility = Visibility.Hidden;
+                                Modified = true;
                             });
                             break;
                         }
-                        
+
                         DoStt(chunkView, true, () =>
                         {
                             if (chunkViews.Count(cv => cv.VisualState == AudioChunkView.State.Idle) == 0)
@@ -908,6 +966,7 @@ namespace VADEdit
                     {
                         grdMain.IsEnabled = true;
                         grdWait.Visibility = Visibility.Hidden;
+                        Modified = true;
                         //MessageBox.Show($"Done!\nSaved in \"{txtChunkLocation.Text}\"", "Export Info", MessageBoxButton.OK, MessageBoxImage.Information);
                     });
                 }).Start();
@@ -926,28 +985,47 @@ namespace VADEdit
 
         private void Options_Click(object sender, RoutedEventArgs e)
         {
-            SettingsWindow.Show();
+            try
+            {
+                SettingsWindow.Show();
+            }
+            catch (Exception ex)
+            {
+                MessageBox.Show(ex.Message, "Program Error", MessageBoxButton.OK, MessageBoxImage.Error);
+            }
             Background = (SolidColorBrush)(new BrushConverter()).ConvertFromString(Settings.AppBackgroundColor);
             waveView.InvalidateVisual();
             foreach (var chunkView in grdTime.Children.OfType<AudioChunkView>())
             {
-                chunkView.InvalidateVisual();
+                chunkView.UpdateVisuals();
             }
         }
 
         protected override void OnClosing(CancelEventArgs e)
         {
-            if (waveStream != null && MessageBox.Show("Are you sure you want to exit?", "Operation Confirmation", MessageBoxButton.YesNo, MessageBoxImage.Question) == MessageBoxResult.No)
+            if (Modified)
             {
-                e.Cancel = true;
+                var msgResult = MessageBox.Show("There are unsaved changes.\nDo you want to save them before exiting?", "Operation Confirmation", MessageBoxButton.YesNoCancel, MessageBoxImage.Question);
+                switch (msgResult)
+                {
+                    case MessageBoxResult.Cancel:
+                        e.Cancel = true;
+                        cancelFlag = true;
+                        break;
+                    case MessageBoxResult.Yes:
+                        SaveProject();
+                        break;
+                    case MessageBoxResult.No:
+                        break;
+                    default:
+                        break;
+                }
             }
-
-            cancelFlag = true;
 
             base.OnClosing(e);
         }
 
-        private void btnCancelLongProcess_Click(object sender, RoutedEventArgs e)
+        private void CancelLongProcess_Click(object sender, RoutedEventArgs e)
         {
             if (cancelFlag)
             {
@@ -964,7 +1042,7 @@ namespace VADEdit
             var totLen = waveView.WaveStream.Length;
             var totTime = waveView.WaveStream.TotalTime.TotalSeconds;
 
-            AddItemView(
+            AddChunkView(
                 new TimeRange(
                     (waveView.SelectionStart / totLen) * totTime,
                     (waveView.SelectionEnd / totLen) * totTime
@@ -972,6 +1050,89 @@ namespace VADEdit
                 insertIndex: grdTime.Children.Contains(currentChunkView) ? grdTime.Children.IndexOf(currentChunkView) + 1 : 0,
                 focus: true
             );
+        }
+
+        private void RevealFolder_Click(object sender, RoutedEventArgs e)
+        {
+            Process.Start("Explorer.exe", projectLocation);
+        }
+
+        private async void NewProject_Click(object sender, System.Windows.Input.ExecutedRoutedEventArgs e)
+        {
+            waveView.Pause();
+            var pi = NewProjectWindow.GetNewProjectInfo();
+            if (pi != null)
+            {
+                projectLocation = Path.Combine(pi.Value.ProjectBaseLocation, pi.Value.ProjectName);
+                projectFileLocation = Path.Combine(projectLocation, "Project.vadedit");
+                sourceLocation = pi.Value.MediaLocation;
+                Directory.CreateDirectory(projectLocation);
+                projectConfig = new ProjectConfig(projectFileLocation, pi.Value.ProjectName);
+                await ConvertLoad();
+                btnRevealFolder.IsEnabled = true;
+                btnSaveProject.IsEnabled = true;
+                Modified = true;
+            }
+        }
+
+        private async void OpenProject_Click(object sender, System.Windows.Input.ExecutedRoutedEventArgs e)
+        {
+            var dlg = new System.Windows.Forms.OpenFileDialog()
+            {
+                Filter = "VAD Project|*.vadedit",
+                InitialDirectory = Settings.ProjectBaseLocation,
+                Title = "Open Project"
+            };
+            var res = dlg.ShowDialog();
+            if (res == System.Windows.Forms.DialogResult.OK)
+            {
+                projectLocation = Path.GetDirectoryName(dlg.FileName);
+                projectConfig = new ProjectConfig(dlg.FileName);
+                wavLocation = Path.Combine(projectLocation, await projectConfig.GetWavPath());
+                if (!string.IsNullOrWhiteSpace(wavLocation))
+                {
+                    await LoadStream(wavLocation, async () =>
+                    {
+                        txtWait.Text = "Loading Chunks... Please wait...";
+                        grdTime.Children.Clear();
+                        var projChunks = projectConfig.GetAudioChunkViews();
+                        while (projChunks.MoveNext())
+                        {
+                            AddChunkView(projChunks.Current);
+                            await Task.Delay(1);
+                        }
+                        await Task.Delay(100);
+                        Modified = false;
+                    });
+                    btnRevealFolder.IsEnabled = true;
+                }
+            }
+            dlg.Dispose();
+            GC.Collect();
+        }
+
+        private async void SaveProject()
+        {
+            if (Modified && projectConfig != null)
+            {
+                txtWait.Text = "Saving Project... Please wait...";
+                btnCancel.Visibility = Visibility.Collapsed;
+                grdWait.Visibility = Visibility.Visible;
+                grdMain.IsEnabled = false;
+                await Task.Delay(100);
+                await projectConfig.SetWavPath(wavLocation);
+                await projectConfig.SetAudioChunkViews(grdTime.Children.OfType<AudioChunkView>().ToList());
+                await Task.Delay(100);
+                Modified = false;
+                grdMain.IsEnabled = true;
+                grdWait.Visibility = Visibility.Hidden;
+                btnCancel.Visibility = Visibility.Visible;
+            }
+        }
+
+        private void SaveProject_Click(object sender, System.Windows.Input.ExecutedRoutedEventArgs e)
+        {
+            SaveProject();
         }
     }
 
