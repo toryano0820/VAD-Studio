@@ -55,7 +55,7 @@
                 <RowDefinition Height="30" />
             </Grid.RowDefinitions>
             <Border BorderThickness="1" BorderBrush="Gray" Margin="10,10,10,0" Height="167" VerticalAlignment="Top">
-                <local:WaveFormView x:Name="waveView" PlayRangeEnded="waveView_PlayRangeEnded" ClipToBounds="True"/>
+                <local:WaveFormViewer x:Name="waveView" PlayRangeEnded="waveView_PlayRangeEnded" ClipToBounds="True"/>
             </Border>
             <Border BorderThickness="1" BorderBrush="Gray" Grid.Row="1" Margin="10">
                 <ScrollViewer Name="chunkScroller" HorizontalScrollBarVisibility="Disabled" VerticalScrollBarVisibility="Auto" Focusable="False">

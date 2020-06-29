@@ -193,7 +193,7 @@ namespace VADEdit
             };
         }
 
-        public async Task SetWaveStream(WaveStream waveStream, Action<bool> callback = null)
+        public async Task SetWaveStream(string fileName, Action<bool> callback = null)
         {
             WaveStream = null;
             WaveFormData = null;
@@ -203,6 +203,7 @@ namespace VADEdit
             {
                 try
                 {
+                    var waveStream = new WaveFileReader(fileName);
                     if (waveStream.WaveFormat.Channels != 1 || waveStream.WaveFormat.SampleRate != 16000)
                     {
                         throw new FileFormatException("Input should be 16kHz Mono WAV file.");
@@ -414,7 +415,7 @@ namespace VADEdit
                 lnColor.A = 255;
                 linePos.Stroke = new SolidColorBrush(lnColor);
 
-                //GC.Collect();
+                GC.Collect();
 
                 oldWidth = ActualWidth;
                 RenderPositionLine();

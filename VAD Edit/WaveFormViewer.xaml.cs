@@ -1,20 +1,14 @@
 ﻿using NAudio.Wave;
 using System;
-using System.Collections.Generic;
 using System.IO;
 using System.Linq;
-using System.Text;
 using System.Threading;
 using System.Threading.Tasks;
 using System.Windows;
 using System.Windows.Controls;
-using System.Windows.Data;
-using System.Windows.Documents;
 using System.Windows.Input;
 using System.Windows.Media;
-using System.Windows.Media.Imaging;
-using System.Windows.Navigation;
-using System.Windows.Shapes;
+using System.Windows.Threading;
 
 namespace VADEdit
 {
@@ -37,10 +31,10 @@ namespace VADEdit
         public static readonly DependencyProperty ScrollOffsetProperty =
             DependencyProperty.Register("ScrollOffset", typeof(double), typeof(WaveFormViewer), new PropertyMetadata(0.0, (o, e) =>
             {
-                (o as WaveFormView).InvalidateVisual();
+                (o as WaveFormViewer).InvalidateVisual();
             }, (o, e) =>
             {
-                var @this = o as WaveFormView;
+                var @this = o as WaveFormViewer;
                 var value = (double)e;
                 var maxScroll = @this.MaxScroll;
                 return (value < 0.0) ? 0.0 : (value > maxScroll) ? maxScroll : value;
@@ -57,10 +51,10 @@ namespace VADEdit
         public static readonly DependencyProperty ZoomProperty =
             DependencyProperty.Register("Zoom", typeof(double), typeof(WaveFormViewer), new PropertyMetadata(1.0, (o, e) =>
             {
-                (o as WaveFormView).InvalidateVisual();
+                (o as WaveFormViewer).InvalidateVisual();
             }, (o, e) =>
             {
-                var @this = o as WaveFormView;
+                var @this = o as WaveFormViewer;
                 var value = (double)e;
                 return (value < @this.MinZoom) ? @this.MinZoom : (value > @this.MaxZoom) ? @this.MaxZoom : value;
             }));
@@ -74,9 +68,12 @@ namespace VADEdit
 
         // Using a DependencyProperty as the backing store for SelectionStart.  This enables animation, styling, binding, etc...
         public static readonly DependencyProperty SelectionStartProperty =
-            DependencyProperty.Register("SelectionStart", typeof(double), typeof(WaveFormViewer), new PropertyMetadata(0.0, null, (o, e) =>
+            DependencyProperty.Register("SelectionStart", typeof(double), typeof(WaveFormViewer), new PropertyMetadata(0.0, (o, e) =>
             {
-                var @this = o as WaveFormView;
+                (o as WaveFormViewer).UpdateSelection();
+            }, (o, e) =>
+            {
+                var @this = o as WaveFormViewer;
                 var value = (double)e;
 
                 if (value > @this.SelectionEnd)
@@ -94,9 +91,12 @@ namespace VADEdit
 
         // Using a DependencyProperty as the backing store for SelectionEnd.  This enables animation, styling, binding, etc...
         public static readonly DependencyProperty SelectionEndProperty =
-            DependencyProperty.Register("SelectionEnd", typeof(double), typeof(WaveFormViewer), new PropertyMetadata(0.0, null, (o, e) =>
+            DependencyProperty.Register("SelectionEnd", typeof(double), typeof(WaveFormViewer), new PropertyMetadata(0.0, (o, e) =>
             {
-                var @this = o as WaveFormView;
+                (o as WaveFormViewer).UpdateSelection();
+            }, (o, e) =>
+            {
+                var @this = o as WaveFormViewer;
                 var value = (double)e;
 
                 if (value < @this.SelectionStart)
@@ -137,7 +137,7 @@ namespace VADEdit
 
         public double MaxZoom { get; private set; } = 1.0;
         public double MinZoom { get; private set; } = 1.0;
-        public List<float> WaveFormData { get; private set; }
+        public float[] WaveFormData { get; private set; }
         public TimeSpan PlayRangeEnd { get; set; } = TimeSpan.Zero;
 
         public WaveOut Player { get; } = new WaveOut()
@@ -146,26 +146,29 @@ namespace VADEdit
             DesiredLatency = 10
         };
 
-        private float waveFormAvg = 0.0F;
-        private long waveSize = 0;
-        private int waveFormSize = 0;
+        private BrushConverter BrushConverter { get; } = new BrushConverter();
+
         private double maxSpan = 0.0;
         private double downX = 0.0;
         private double downScroll = 0.0;
         private bool modifierCtrlPressed = false;
         private bool modifierShiftPressed = false;
-        private WriteableBitmap bitmap = null;
-        private BrushConverter BrushConverter { get; } = new BrushConverter();
 
         public WaveFormViewer()
         {
             InitializeComponent();
-            //RenderOptions.SetEdgeMode(this, EdgeMode.Aliased);
+
+            RenderOptions.SetEdgeMode(this, EdgeMode.Aliased);
             Background = Brushes.Transparent;
             Focusable = true;
+
+            Loaded += delegate
+            {
+                UpdateVisuals();
+            };
         }
 
-        public async Task SetWaveStream(WaveStream waveStream, Action<bool> callback = null)
+        public async Task SetWaveStream(string fileName, Action<bool> callback = null)
         {
             WaveStream = null;
             WaveFormData = null;
@@ -175,6 +178,7 @@ namespace VADEdit
             {
                 try
                 {
+                    var waveStream = new WaveFileReader(fileName);
                     if (waveStream.WaveFormat.Channels != 1 || waveStream.WaveFormat.SampleRate != 16000)
                     {
                         throw new FileFormatException("Input should be 16kHz Mono WAV file.");
@@ -253,16 +257,8 @@ namespace VADEdit
                     Player.Init(waveStream);
                     waveStream.Position = 0L;
                     WaveStream = waveStream;
-                    WaveFormData = waveFormData.ToList();
-                    waveFormSize = waveFormData.Count();
-                    waveFormAvg = waveFormData.Average();
-                    Dispatcher.Invoke(() =>
-                    {
-                        bitmap = BitmapFactory.New(waveFormSize, (int)ActualHeight);
-                        RefreshWaveForm();
-                    });
+                    WaveFormData = waveFormData;
 
-                    
                 }
                 catch (TaskCanceledException) { }
                 catch (Exception ex)
@@ -346,78 +342,13 @@ namespace VADEdit
         private double oldWidth = double.NaN;
         protected override void OnRender(DrawingContext drawingContext)
         {
-            var bgColor = (SolidColorBrush)(new BrushConverter()).ConvertFromString(Settings.AudioWaveBackgroundColor);
+            var bgColor = (SolidColorBrush)BrushConverter.ConvertFromString(Settings.AudioWaveBackgroundColor);
+            drawingContext.DrawRectangle(bgColor, null, new Rect(0, 0, ActualWidth, ActualHeight)); // Draw Background
 
             if (WaveFormData != null)
             {
-                //var sampleSize = waveFormSize / (WaveFormWidth + 1);
-
-                //if (!oldWidth.Equals(double.NaN))
-                //    ScrollOffset = ScrollOffset * (ActualWidth / oldWidth);
-                //else
-                //    ScrollOffset = ScrollOffset;
-
-                //var multiplier = (ActualHeight * 0.9) / maxSpan;
-
-                //var drawCenter = ((ActualHeight - ((waveFormAvg * 2) * multiplier)) / 2);
-
-                //var visibleSample = WaveFormData.GetRange((int)(sampleSize * ScrollOffset), Math.Min((int)(sampleSize * (ActualWidth + 1)), waveFormSize));
-
-                //var pen = new Pen((SolidColorBrush)(new BrushConverter()).ConvertFromString(Settings.AudioWaveColor), 1);
-
-                //for (int i = 0; i < ActualWidth && (sampleSize * i) + sampleSize < visibleSample.Count(); i++)
-                //{
-                //    var sample = visibleSample.GetRange((int)(sampleSize * i), (int)(sampleSize)).ToArray();
-
-                //    if (sample.Length > 0)
-                //    {
-                //        drawingContext.DrawLine(
-                //            pen,
-                //            new Point(i + 1, drawCenter + (-sample.Max() * multiplier)),
-                //            new Point(i + 1, drawCenter + (-sample.Min() * multiplier)));
-                //    }
-
-                //    sample = null;
-                //}
-
-                //visibleSample.Clear();
-                //visibleSample = null;
-
-                var selectionStart = Math.Max(-1, ((SelectionStart / waveSize) * WaveFormWidth) - ScrollOffset);
-                var selectionEnd = Math.Min(ActualWidth, ((SelectionEnd / waveSize) * WaveFormWidth) - ScrollOffset);
-                var selColor = (SolidColorBrush)BrushConverter.ConvertFromString(Settings.AudioWaveSelectionColor);
-
-                if (selectionEnd - selectionStart >= 0)
-                {
-                    grdSelect.Background = selColor;
-                    grdSelect.Margin = new Thickness(selectionStart, 0, 0, 0);
-                    grdSelect.Width = selectionEnd - selectionStart;
-                }
-
-                var lnColor = selColor.Color;
-                lnColor.A = 255;
-                linePos.Stroke = new SolidColorBrush(lnColor);
-
-                //GC.Collect();
-
-                oldWidth = ActualWidth;
-                RenderPositionLine();
-
-                var timeBgColor = bgColor.Color;
-                timeBgColor.A = 200;
-                txtTime.Background = new SolidColorBrush(timeBgColor);
-                txtTime.Foreground = (SolidColorBrush)BrushConverter.ConvertFromString(Settings.AudioWaveColor);
-            }
-
-            base.OnRender(drawingContext);
-        }
-
-        public void RefreshWaveForm()
-        {
-            using (var context = bitmap.GetBitmapContext())
-            {
-                bitmap.Clear((Color)ColorConverter.ConvertFromString(Settings.AudioWaveBackgroundColor));
-                var sampleSize = waveFormSize / (ActualWidth * MaxZoom + 1);
+                var waveSize = WaveFormData.Length;
+                var sampleSize = waveSize / (WaveFormWidth + 1);
 
                 if (!oldWidth.Equals(double.NaN))
                     ScrollOffset = ScrollOffset * (ActualWidth / oldWidth);
@@ -426,12 +357,11 @@ namespace VADEdit
 
                 var multiplier = (ActualHeight * 0.9) / maxSpan;
 
-                var drawCenter = ((ActualHeight - ((waveFormAvg * 2) * multiplier)) / 2);
+                var drawCenter = ((ActualHeight - ((WaveFormData.Average() * 2) * multiplier)) / 2);
 
-                var visibleSample = WaveFormData.GetRange((int)(sampleSize * ScrollOffset), Math.Min((int)(sampleSize * (ActualWidth + 1)), waveFormSize));
+                var visibleSample = WaveFormData.ToList().GetRange((int)(sampleSize * ScrollOffset), Math.Min((int)(sampleSize * (ActualWidth + 1)), waveSize));
 
-                var pen = (Color)BrushConverter.ConvertFromString(Settings.AudioWaveColor);
-                var points = new List<int>();
+                var pen = new Pen((SolidColorBrush)BrushConverter.ConvertFromString(Settings.AudioWaveColor), 1);
 
                 for (int i = 0; i < ActualWidth && (sampleSize * i) + sampleSize < visibleSample.Count(); i++)
                 {
@@ -439,18 +369,53 @@ namespace VADEdit
 
                     if (sample.Length > 0)
                     {
-                        points.AddRange(new[] { i, (int)(drawCenter + (-sample.Max() * multiplier)), i, (int)(drawCenter + (-sample.Min() * multiplier)) });
+                        drawingContext.DrawLine(
+                            pen,
+                            new Point(i + 1, drawCenter + (-sample.Max() * multiplier)),
+                            new Point(i + 1, drawCenter + (-sample.Min() * multiplier)));
                     }
 
                     sample = null;
                 }
 
-                bitmap.DrawPolyline(points.ToArray(), pen);
-                visibleSample.Clear();
-                visibleSample = null;
+                oldWidth = ActualWidth;
+                RenderPositionLine();
             }
 
-            imgWave.Source = bitmap;
+            base.OnRender(drawingContext);
+        }
+
+        public void UpdateVisuals()
+        {
+            var selColor = (SolidColorBrush)BrushConverter.ConvertFromString(Settings.AudioWaveSelectionColor);
+            grdSelect.Background = selColor;
+
+            var lnColor = selColor.Color;
+            lnColor.A = 255;
+            linePos.Stroke = new SolidColorBrush(lnColor);
+
+            var timeBgColor = (Color)ColorConverter.ConvertFromString(Settings.AudioWaveBackgroundColor);
+            timeBgColor.A = 200;
+            txtTime.Background = new SolidColorBrush(timeBgColor);
+            txtTime.Foreground = (SolidColorBrush)BrushConverter.ConvertFromString(Settings.AudioWaveColor);
+
+            InvalidateVisual();
+        }
+
+        private void UpdateSelection()
+        {
+            var selectionStart = Math.Max(-1, ((SelectionStart / WaveFormData.Length) * WaveFormWidth) - ScrollOffset);
+            var selectionEnd = Math.Min(ActualWidth, ((SelectionEnd / WaveFormData.Length) * WaveFormWidth) - ScrollOffset);
+            if (selectionEnd - selectionStart > 0)
+            {
+                grdSelect.Margin = new Thickness(selectionStart, 0, 0, 0);
+                grdSelect.Width = selectionEnd - selectionStart;
+            }
+            else
+            {
+                grdSelect.Margin = new Thickness(0);
+                grdSelect.Width = 0;
+            }
         }
 
         public void Play()
@@ -687,4 +652,26 @@ namespace VADEdit
             base.OnMouseEnter(e);
         }
     }
+
+    public struct TimeRange
+    {
+        public TimeSpan Start { get; set; }
+        public TimeSpan End { get; set; }
+
+        public TimeRange(TimeSpan from, TimeSpan to)
+        {
+            Start = from;
+            End = to;
+        }
+
+        public TimeRange(double secFrom, double secTo) :
+            this(TimeSpan.FromSeconds(secFrom), TimeSpan.FromSeconds(secTo))
+        { }
+
+        public override string ToString()
+        {
+            return $"{Start.ToString(@"hh\:mm\:ss\.fff")} - {End.ToString(@"hh\:mm\:ss\.fff")}";
+        }
+    }
 }
+

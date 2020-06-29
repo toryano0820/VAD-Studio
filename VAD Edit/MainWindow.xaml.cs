@@ -162,7 +162,8 @@ namespace VADEdit
             btnCancel.Visibility = Visibility.Collapsed;
             btnSplit.IsEnabled = true;
             GC.Collect();
-            await waveView.SetWaveStream(new NAudio.Wave.WaveFileReader(filePath), async (success) =>
+
+            await waveView.SetWaveStream(filePath, async (success) =>
             {
                 btnExportAll.IsEnabled = false;
                 btnSttAll.IsEnabled = false;
@@ -296,188 +297,188 @@ namespace VADEdit
 
         private void SplitSilence()
         {
-            cancelFlag = false;
-            waveView.Pause();
+            //cancelFlag = false;
+            //waveView.Pause();
 
-            grdTime.Children.Clear();
-            currentChunkView = null;
-            playingChunkView = null;
-            ShowSelection(new TimeRange(TimeSpan.Zero, TimeSpan.Zero));
+            //grdTime.Children.Clear();
+            //currentChunkView = null;
+            //playingChunkView = null;
+            //ShowSelection(new TimeRange(TimeSpan.Zero, TimeSpan.Zero));
 
-            txtWait.Text = "VAD processing... Please wait...";
-            grdWait.Visibility = Visibility.Visible;
-            grdMain.IsEnabled = false;
-            btnAddChunk.IsEnabled = false;
+            //txtWait.Text = "VAD processing... Please wait...";
+            //grdWait.Visibility = Visibility.Visible;
+            //grdMain.IsEnabled = false;
+            //btnAddChunk.IsEnabled = false;
 
-            var waveTotalMillis = waveStream.TotalTime.TotalMilliseconds;
-            var waveData = waveView.WaveFormData;
-            var waveDataLength = waveData.Count();
+            //var waveTotalMillis = waveStream.TotalTime.TotalMilliseconds;
+            //var waveData = waveView.WaveFormData;
+            //var waveDataLength = waveData.Count();
 
-            GC.Collect();
+            //GC.Collect();
 
-            if (Settings.SplitOnSilence)
-            {
+            //if (Settings.SplitOnSilence)
+            //{
 
-                float minVolume = Settings.MinVolume;
-                int minLength = Settings.MinLength;
-                int maxSilenceMillis = Settings.MaxSilence;
+            //    float minVolume = Settings.MinVolume;
+            //    int minLength = Settings.MinLength;
+            //    int maxSilenceMillis = Settings.MaxSilence;
 
-                new Thread(() =>
-                {
-                    try
-                    {
-                        int start = -1;
-                        int end = -1;
+            //    new Thread(() =>
+            //    {
+            //        try
+            //        {
+            //            int start = -1;
+            //            int end = -1;
 
-                        int silenceCtr = 0;
-                        var maxWidth = waveTotalMillis;
-                        var max = waveData.Max();
+            //            int silenceCtr = 0;
+            //            var maxWidth = waveTotalMillis;
+            //            var max = waveData.Max();
 
-                        for (int i = 0; i < (int)maxWidth; i++)
-                        {
-                            if (cancelFlag)
-                            {
-                                Dispatcher.Invoke(() =>
-                                {
-                                    grdMain.IsEnabled = true;
-                                    grdWait.Visibility = Visibility.Hidden;
-                                });
-                                break;
-                            }
-                            var secDataVolume = (waveData[(int)((i / maxWidth) * waveDataLength)] / max) * 100;
-                            if (i == (int)maxWidth - 1 && start != -1)
-                            {
-                                end = i + 1;
+            //            for (int i = 0; i < (int)maxWidth; i++)
+            //            {
+            //                if (cancelFlag)
+            //                {
+            //                    Dispatcher.Invoke(() =>
+            //                    {
+            //                        grdMain.IsEnabled = true;
+            //                        grdWait.Visibility = Visibility.Hidden;
+            //                    });
+            //                    break;
+            //                }
+            //                var secDataVolume = (waveData[(int)((i / maxWidth) * waveDataLength)] / max) * 100;
+            //                if (i == (int)maxWidth - 1 && start != -1)
+            //                {
+            //                    end = i + 1;
 
-                                if (end - start > minLength)
-                                {
-                                    Thread.Sleep(5);
-                                    Dispatcher.Invoke(() =>
-                                    {
-                                        AddChunkView(new TimeRange(TimeSpan.FromMilliseconds(start), TimeSpan.FromMilliseconds(end)));
-                                    });
-                                }
+            //                    if (end - start > minLength)
+            //                    {
+            //                        Thread.Sleep(5);
+            //                        Dispatcher.Invoke(() =>
+            //                        {
+            //                            AddChunkView(new TimeRange(TimeSpan.FromMilliseconds(start), TimeSpan.FromMilliseconds(end)));
+            //                        });
+            //                    }
 
-                                start = -1;
-                                end = -1;
-                                silenceCtr = 0;
-                            }
-                            else if (secDataVolume < minVolume)
-                            {
-                                if (start != -1 && silenceCtr >= maxSilenceMillis)
-                                {
-                                    if (i > start)
-                                    {
-                                        end = i - (maxSilenceMillis - 100);
+            //                    start = -1;
+            //                    end = -1;
+            //                    silenceCtr = 0;
+            //                }
+            //                else if (secDataVolume < minVolume)
+            //                {
+            //                    if (start != -1 && silenceCtr >= maxSilenceMillis)
+            //                    {
+            //                        if (i > start)
+            //                        {
+            //                            end = i - (maxSilenceMillis - 100);
 
-                                        if (end - start > minLength)
-                                        {
-                                            Thread.Sleep(5);
-                                            Dispatcher.Invoke(() =>
-                                            {
-                                                AddChunkView(new TimeRange(TimeSpan.FromMilliseconds(start), TimeSpan.FromMilliseconds(end)));
-                                            });
-                                        }
-                                    }
+            //                            if (end - start > minLength)
+            //                            {
+            //                                Thread.Sleep(5);
+            //                                Dispatcher.Invoke(() =>
+            //                                {
+            //                                    AddChunkView(new TimeRange(TimeSpan.FromMilliseconds(start), TimeSpan.FromMilliseconds(end)));
+            //                                });
+            //                            }
+            //                        }
 
-                                    start = -1;
-                                    end = -1;
-                                    silenceCtr = 0;
-                                    continue;
-                                }
-                                silenceCtr++;
-                            }
-                            else if (start == -1)
-                            {
-                                silenceCtr = 0;
-                                start = Math.Max(i - 100, 0);
-                                end = -1;
-                            }
-                            else
-                            {
-                                silenceCtr = 0;
-                                end = -1;
-                            }
-                        }
-                    }
-                    catch (TaskCanceledException) { }
-                    catch (Exception ex)
-                    {
-                        //File.AppendAllText("error.log", $"{DateTime.Now.ToString("yyyyMMddHHmmss")} [ERROR]: {ex.Message}:\n{ex.StackTrace}\n");
-                        Logger.Log($"{ex.Message}:\n{ex.StackTrace}", Logger.Type.Error);
-                        MessageBox.Show(ex.Message, "Program Error", MessageBoxButton.OK, MessageBoxImage.Error);
-                    }
+            //                        start = -1;
+            //                        end = -1;
+            //                        silenceCtr = 0;
+            //                        continue;
+            //                    }
+            //                    silenceCtr++;
+            //                }
+            //                else if (start == -1)
+            //                {
+            //                    silenceCtr = 0;
+            //                    start = Math.Max(i - 100, 0);
+            //                    end = -1;
+            //                }
+            //                else
+            //                {
+            //                    silenceCtr = 0;
+            //                    end = -1;
+            //                }
+            //            }
+            //        }
+            //        catch (TaskCanceledException) { }
+            //        catch (Exception ex)
+            //        {
+            //            //File.AppendAllText("error.log", $"{DateTime.Now.ToString("yyyyMMddHHmmss")} [ERROR]: {ex.Message}:\n{ex.StackTrace}\n");
+            //            Logger.Log($"{ex.Message}:\n{ex.StackTrace}", Logger.Type.Error);
+            //            MessageBox.Show(ex.Message, "Program Error", MessageBoxButton.OK, MessageBoxImage.Error);
+            //        }
 
-                    GC.Collect();
+            //        GC.Collect();
 
-                    Dispatcher.Invoke(() =>
-                    {
-                        if (grdTime.Children.OfType<AudioChunkView>().Count() > 0)
-                        {
-                            btnExportAll.IsEnabled = true;
-                            btnSttAll.IsEnabled = true;
-                        }
-                        grdMain.IsEnabled = true;
-                        grdWait.Visibility = Visibility.Hidden;
-                    });
-                }).Start();
-            }
-            else
-            {
-                var splitLength = Settings.SplitLength;
+            //        Dispatcher.Invoke(() =>
+            //        {
+            //            if (grdTime.Children.OfType<AudioChunkView>().Count() > 0)
+            //            {
+            //                btnExportAll.IsEnabled = true;
+            //                btnSttAll.IsEnabled = true;
+            //            }
+            //            grdMain.IsEnabled = true;
+            //            grdWait.Visibility = Visibility.Hidden;
+            //        });
+            //    }).Start();
+            //}
+            //else
+            //{
+            //    var splitLength = Settings.SplitLength;
 
-                new Thread(() =>
-                {
-                    try
-                    {
-                        var waveMillisCounter = 0;
-                        while (waveMillisCounter < waveTotalMillis)
-                        {
-                            if (cancelFlag)
-                            {
-                                cancelFlag = false;
-                                Dispatcher.Invoke(() =>
-                                {
-                                    grdMain.IsEnabled = true;
-                                    grdWait.Visibility = Visibility.Hidden;
-                                });
-                                break;
-                            }
+            //    new Thread(() =>
+            //    {
+            //        try
+            //        {
+            //            var waveMillisCounter = 0;
+            //            while (waveMillisCounter < waveTotalMillis)
+            //            {
+            //                if (cancelFlag)
+            //                {
+            //                    cancelFlag = false;
+            //                    Dispatcher.Invoke(() =>
+            //                    {
+            //                        grdMain.IsEnabled = true;
+            //                        grdWait.Visibility = Visibility.Hidden;
+            //                    });
+            //                    break;
+            //                }
 
-                            Thread.Sleep(10);
-                            var end = waveMillisCounter + splitLength;
-                            if (end > waveTotalMillis)
-                                end = (int)waveTotalMillis;
-                            Dispatcher.Invoke(() =>
-                            {
-                                AddChunkView(new TimeRange(TimeSpan.FromMilliseconds(waveMillisCounter), TimeSpan.FromMilliseconds(end)));
-                            });
+            //                Thread.Sleep(10);
+            //                var end = waveMillisCounter + splitLength;
+            //                if (end > waveTotalMillis)
+            //                    end = (int)waveTotalMillis;
+            //                Dispatcher.Invoke(() =>
+            //                {
+            //                    AddChunkView(new TimeRange(TimeSpan.FromMilliseconds(waveMillisCounter), TimeSpan.FromMilliseconds(end)));
+            //                });
 
-                            waveMillisCounter += splitLength;
-                        }
-                    }
-                    catch (TaskCanceledException) { }
-                    catch (Exception ex)
-                    {
-                        //File.AppendAllText("error.log", $"{DateTime.Now.ToString("yyyyMMddHHmmss")} [ERROR]: {ex.Message}:\n{ex.StackTrace}\n");
-                        Logger.Log($"{ex.Message}:\n{ex.StackTrace}", Logger.Type.Error);
-                        MessageBox.Show(ex.Message, "Program Error", MessageBoxButton.OK, MessageBoxImage.Error);
-                    }
+            //                waveMillisCounter += splitLength;
+            //            }
+            //        }
+            //        catch (TaskCanceledException) { }
+            //        catch (Exception ex)
+            //        {
+            //            //File.AppendAllText("error.log", $"{DateTime.Now.ToString("yyyyMMddHHmmss")} [ERROR]: {ex.Message}:\n{ex.StackTrace}\n");
+            //            Logger.Log($"{ex.Message}:\n{ex.StackTrace}", Logger.Type.Error);
+            //            MessageBox.Show(ex.Message, "Program Error", MessageBoxButton.OK, MessageBoxImage.Error);
+            //        }
 
-                    GC.Collect();
+            //        GC.Collect();
 
-                    Dispatcher.Invoke(() =>
-                    {
-                        if (grdTime.Children.OfType<AudioChunkView>().Count() > 0)
-                        {
-                            btnExportAll.IsEnabled = true;
-                            btnSttAll.IsEnabled = true;
-                        }
-                        grdMain.IsEnabled = true;
-                        grdWait.Visibility = Visibility.Hidden;
-                    });
-                }).Start();
-            }
+            //        Dispatcher.Invoke(() =>
+            //        {
+            //            if (grdTime.Children.OfType<AudioChunkView>().Count() > 0)
+            //            {
+            //                btnExportAll.IsEnabled = true;
+            //                btnSttAll.IsEnabled = true;
+            //            }
+            //            grdMain.IsEnabled = true;
+            //            grdWait.Visibility = Visibility.Hidden;
+            //        });
+            //    }).Start();
+            //}
         }
 
         private string GetNextFileName()
