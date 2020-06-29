@@ -5,7 +5,7 @@
         xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
         xmlns:local="clr-namespace:VADEdit"
         mc:Ignorable="d"
-        Title="VAD Edit" MinHeight="600" MinWidth="1100" Height="520" Width="695"
+        Title="VAD Edit" MinHeight="600" MinWidth="200" Height="520" Width="695"
         WindowStartupLocation="CenterScreen" WindowState="Maximized" Background="#2D2D30">
     <Window.CommandBindings>
         <CommandBinding Command="New" Executed="NewProject_Click" />

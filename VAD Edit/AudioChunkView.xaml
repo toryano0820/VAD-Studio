@@ -17,7 +17,7 @@
     </UserControl.RenderTransform>
     <Grid Name="grdBackground" Background="White">
         <Grid.ColumnDefinitions>
-            <ColumnDefinition Width="auto"/>
+            <ColumnDefinition Width="0"/>
             <ColumnDefinition Width="auto"/>
             <ColumnDefinition Width="auto"/>
             <ColumnDefinition Width="auto"/>

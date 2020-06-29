@@ -1,0 +1,15 @@
+﻿<UserControl x:Class="VADEdit.WaveFormViewer" x:Name="this"
+             xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006" 
+             xmlns:d="http://schemas.microsoft.com/expression/blend/2008" 
+             xmlns:local="clr-namespace:VADEdit"
+             mc:Ignorable="d" 
+             d:DesignHeight="156" d:DesignWidth="509.15">
+    <Grid>
+        <Image Name="imgWave" />
+        <Label Name="grdSelect" VerticalAlignment="Stretch" Width="0" HorizontalAlignment="Left" IsHitTestVisible="False"/>
+        <Line Name="linePos" Stroke="Black" StrokeThickness="1" X1="0" Y1="0" X2="0" Y2="{Binding ActualHeight, ElementName=this}" IsHitTestVisible="False" />
+        <Label Name="txtTime" Content="00:00:00.00" VerticalAlignment="Bottom" Margin="2" IsHitTestVisible="False"/>
+    </Grid>
+</UserControl>

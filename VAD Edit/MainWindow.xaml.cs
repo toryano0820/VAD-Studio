@@ -257,7 +257,7 @@ namespace VADEdit
                         ffmpeg.StartInfo.Arguments = $"/K ffmpeg.exe -y -i \"{dlg.FileName}\" -c copy -vn -acodec pcm_s16le -ar 16000 -ac 1 \"{chunkSaveLocation}.wav\"";
                         ffmpeg.StartInfo.WindowStyle = ProcessWindowStyle.Normal;
 #else
-                    ffmpeg.StartInfo.FileName = Path.Combine(AppDomain.CurrentDomain.BaseDirectory, "ffmpeg.exe ");
+                    ffmpeg.StartInfo.FileName = Path.Combine(AppDomain.CurrentDomain.BaseDirectory, "ffmpeg", "ffmpeg.exe ");
                     ffmpeg.StartInfo.Arguments = $"-y -i \"{sourceLocation}\" -c copy -vn -acodec pcm_s16le -ar 16000 -ac 1 \"{wavLocation}\"";
                     ffmpeg.StartInfo.WindowStyle = ProcessWindowStyle.Hidden;
 #endif
@@ -273,6 +273,8 @@ namespace VADEdit
                             Modified = true;
                         });
                     }
+                    else
+                        throw new Exception($"ffmpeg.exe exited with code {ffmpeg.ExitCode}");
                 }
                 catch (TaskCanceledException) { }
                 catch (Exception ex)
@@ -309,7 +311,7 @@ namespace VADEdit
 
             var waveTotalMillis = waveStream.TotalTime.TotalMilliseconds;
             var waveData = waveView.WaveFormData;
-            var waveDataLength = waveData.Length;
+            var waveDataLength = waveData.Count();
 
             GC.Collect();
 

@@ -30,7 +30,7 @@ namespace VADEdit
         public static string AppBackgroundColor { get; set; } = "#FFFFFF";
         public static string ProjectBaseLocation { get; set; } = "c:\\sentence_extractor";
         public static string LastMediaLocation { get; set; } = "c:\\";
-        public static string KinpoSttInferHost { get; set; } = "http://10.24.254.166";
+        public static string KinpoSttInferHost { get; set; } = "http://203.177.163.136";
 
         private static string configFilePath = Path.Combine(App.AppDir, "config.json");
 
