@@ -12,11 +12,17 @@ using System.Windows.Data;
 using System.Windows.Interop;
 using System.Windows.Media;
 using System.Windows.Media.Effects;
+using System.Drawing;
+using System.Windows.Forms;
 
 namespace VADEdit
 {
     public static class Utils
     {
+        #region BrushConverter
+        public static BrushConverter BrushConverter { get; } = new BrushConverter();
+        #endregion
+
         #region Network
 
         public static bool IsNetworkAvailable()
@@ -141,7 +147,7 @@ namespace VADEdit
 
                 loggerRunning = true;
 
-                Application.Current.Exit += delegate
+                App.Current.Exit += delegate
                 {
                     appRunning = false;
                 };
@@ -237,8 +243,112 @@ namespace VADEdit
             Marshal.FreeHGlobal(accentPtr);
         }
         #endregion
+
+        #region WPFScreen
+        public class WpfScreen
+        {
+            public static IEnumerable<WpfScreen> AllScreens()
+            {
+                foreach (Screen screen in Screen.AllScreens)
+                {
+                    yield return new WpfScreen(screen);
+                }
+            }
+
+            public static WpfScreen GetScreenFrom(Window window)
+            {
+                WindowInteropHelper windowInteropHelper = new WindowInteropHelper(window);
+                Screen screen = Screen.FromHandle(windowInteropHelper.Handle);
+                WpfScreen wpfScreen = new WpfScreen(screen);
+                return wpfScreen;
+            }
+
+            public static WpfScreen GetScreenFrom(System.Windows.Point point)
+            {
+                int x = (int)Math.Round(point.X);
+                int y = (int)Math.Round(point.Y);
+
+                // are x,y device-independent-pixels ??
+                System.Drawing.Point drawingPoint = new System.Drawing.Point(x, y);
+                Screen screen = Screen.FromPoint(drawingPoint);
+                WpfScreen wpfScreen = new WpfScreen(screen);
+
+                return wpfScreen;
+            }
+
+            public static WpfScreen Primary
+            {
+                get { return new WpfScreen(Screen.PrimaryScreen); }
+            }
+
+            private readonly Screen screen;
+
+            internal WpfScreen(Screen screen)
+            {
+                this.screen = screen;
+            }
+
+            public Rect DeviceBounds
+            {
+                get { return GetRect(screen.Bounds); }
+            }
+
+            public Rect WorkingArea
+            {
+                get { return GetRect(screen.WorkingArea); }
+            }
+
+            private Rect GetRect(Rectangle value)
+            {
+                // should x, y, width, height be device-independent-pixels ??
+                return new Rect
+                {
+                    X = value.X,
+                    Y = value.Y,
+                    Width = value.Width,
+                    Height = value.Height
+                };
+            }
+
+            public bool IsPrimary
+            {
+                get { return this.screen.Primary; }
+            }
+
+            public string DeviceName
+            {
+                get { return this.screen.DeviceName; }
+            }
+        }
+        #endregion
     }
 }
+
+#region Types
+namespace VADEdit.Types
+{
+    public struct TimeRange
+    {
+        public TimeSpan Start { get; set; }
+        public TimeSpan End { get; set; }
+
+        public TimeRange(TimeSpan from, TimeSpan to)
+        {
+            Start = from;
+            End = to;
+        }
+
+        public TimeRange(double secFrom, double secTo) :
+            this(TimeSpan.FromSeconds(secFrom), TimeSpan.FromSeconds(secTo))
+        { }
+
+        public override string ToString()
+        {
+            return $"{Start.ToString(@"hh\:mm\:ss\.fff")} - {End.ToString(@"hh\:mm\:ss\.fff")}";
+        }
+    }
+}
+#endregion
 
 #region IValueConverters
 namespace VADEdit.Converters

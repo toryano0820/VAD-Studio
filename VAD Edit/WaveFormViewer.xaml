@@ -7,8 +7,16 @@
              mc:Ignorable="d" 
              d:DesignHeight="100" d:DesignWidth="800">
     <Grid>
-        <Label Name="grdSelect" VerticalAlignment="Stretch" Width="0" HorizontalAlignment="Left" IsHitTestVisible="False"/>
+        <Label Name="grdSelect" VerticalAlignment="Stretch" Width="0" Background="Red" HorizontalAlignment="Left" IsHitTestVisible="False"/>
         <Line Name="linePos" Stroke="Black" StrokeThickness="1" X1="0" Y1="0" X2="0" Y2="{Binding ActualHeight, ElementName=this}" IsHitTestVisible="False" />
-        <Label Name="txtTime" Content="00:00:00.00" VerticalAlignment="Bottom" Margin="2" IsHitTestVisible="False"/>
+        <Grid VerticalAlignment="Bottom" HorizontalAlignment="Left" IsHitTestVisible="False">
+            <Label Name="txtTimeBG">
+                <Label.Effect>
+                    <BlurEffect Radius="15" KernelType="Gaussian" RenderingBias="Performance" />
+                </Label.Effect>
+            </Label>
+            <Label Name="txtTime" Content="00:00:00.000 / 00:00:00.000">
+            </Label>
+        </Grid >
     </Grid>
 </UserControl>

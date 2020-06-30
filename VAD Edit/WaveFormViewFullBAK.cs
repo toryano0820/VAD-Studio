@@ -180,10 +180,10 @@
 
 //                await Task.Delay(100);
                 
-//                var timeBgColor = ((SolidColorBrush)(new BrushConverter()).ConvertFromString(Settings.AudioWaveBackgroundColor)).Color;
+//                var timeBgColor = ((SolidColorBrush)Utils.BrushConverter.ConvertFromString(Settings.AudioWaveBackgroundColor)).Color;
 //                timeBgColor.A = 200;
 //                timeView.Background = new SolidColorBrush(timeBgColor);
-//                timeView.Foreground = (SolidColorBrush)(new BrushConverter()).ConvertFromString(Settings.AudioWaveColor);
+//                timeView.Foreground = (SolidColorBrush)Utils.BrushConverter.ConvertFromString(Settings.AudioWaveColor);
 //                SetLeft(timeView, 0);
 //                SetTop(timeView, ActualHeight - timeView.ActualHeight);
 
@@ -336,7 +336,7 @@
 //        private double oldWidth = double.NaN;
 //        protected override void OnRender(DrawingContext drawingContext)
 //        {
-//            var bgColor = (SolidColorBrush)(new BrushConverter()).ConvertFromString(Settings.AudioWaveBackgroundColor);
+//            var bgColor = (SolidColorBrush)Utils.BrushConverter.ConvertFromString(Settings.AudioWaveBackgroundColor);
 //            drawingContext.DrawRectangle(bgColor, null, new Rect(0, 0, ActualWidth, ActualHeight)); // Draw Background
 
 //            if (WaveFormData != null)
@@ -354,7 +354,7 @@
 
 //                var visibleSample = WaveFormData.GetRange((int)(sampleSize * ScrollOffset), Math.Min((int)(sampleSize * (ActualWidth + 1)), waveFormSize));
 
-//                var pen = new Pen((SolidColorBrush)(new BrushConverter()).ConvertFromString(Settings.AudioWaveColor), 1);
+//                var pen = new Pen((SolidColorBrush)Utils.BrushConverter.ConvertFromString(Settings.AudioWaveColor), 1);
 
 //                for (int i = 0; i < ActualWidth && (sampleSize * i) + sampleSize < visibleSample.Count(); i++)
 //                {
@@ -391,7 +391,7 @@
 //                var timeBgColor = bgColor.Color;
 //                timeBgColor.A = 200;
 //                timeView.Background = new SolidColorBrush(timeBgColor);
-//                timeView.Foreground = (SolidColorBrush)(new BrushConverter()).ConvertFromString(Settings.AudioWaveColor);
+//                timeView.Foreground = (SolidColorBrush)Utils.BrushConverter.ConvertFromString(Settings.AudioWaveColor);
 //                SetLeft(timeView, 0);
 //                SetTop(timeView, ActualHeight - timeView.ActualHeight);
 //            }

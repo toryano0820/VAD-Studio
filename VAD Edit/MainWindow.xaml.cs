@@ -18,6 +18,7 @@ using System.Windows.Media;
 using static VADEdit.Utils;
 using System.Collections.Generic;
 using System.Configuration;
+using VADEdit.Types;
 
 namespace VADEdit
 {
@@ -80,11 +81,24 @@ namespace VADEdit
             AppDomain.CurrentDomain.UnhandledException += (o, e) =>
             {
                 var ex = e.ExceptionObject as Exception;
-                MessageBox.Show(ex.GetType().ToString() + ":\n" + ex.Message + "\n" + ex.StackTrace, "Unhandled Program Error", MessageBoxButton.OK, MessageBoxImage.Error);
-                
+                MessageBox.Show(ex.GetType().ToString() + ":\n" + ex.Message + "\n" + ex.StackTrace, "Fatal Error", MessageBoxButton.OK, MessageBoxImage.Error);
             };
 
-            Background = (SolidColorBrush)(new BrushConverter()).ConvertFromString(Settings.AppBackgroundColor);
+            Dispatcher.UnhandledException += (o, e) =>
+            {
+                var ex = e.Exception;
+                MessageBox.Show(ex.GetType().ToString() + ":\n" + ex.Message + "\n" + ex.StackTrace, "Program Error", MessageBoxButton.OK, MessageBoxImage.Error);
+                e.Handled = true;
+            };
+
+            TaskScheduler.UnobservedTaskException += (s, e) =>
+            {
+                var ex = e.Exception;
+                MessageBox.Show(ex.GetType().ToString() + ":\n" + ex.Message + "\n" + ex.StackTrace, "Task Error", MessageBoxButton.OK, MessageBoxImage.Error);
+                e.SetObserved();
+            };
+
+            Background = (SolidColorBrush)Utils.BrushConverter.ConvertFromString(Settings.AppBackgroundColor);
 
             SetTitle();
 
@@ -755,7 +769,7 @@ namespace VADEdit
             {
                 ShowSelection(chunkView.TimeRange);
                 waveView.Play(chunkView.TimeRange);
-                waveView.InvalidateVisual();
+                //waveView.InvalidateVisual();
                 chunkView.PlayButtonVisibility = Visibility.Hidden;
                 playingChunkView = chunkView;
             };
@@ -764,7 +778,7 @@ namespace VADEdit
             {
                 waveView.Pause();
                 waveStream.CurrentTime = chunkView.TimeRange.Start;
-                waveView.InvalidateVisual();
+                //waveView.InvalidateVisual();
                 chunkView.PlayButtonVisibility = Visibility.Visible;
                 playingChunkView = null;
             };
@@ -866,7 +880,7 @@ namespace VADEdit
                 waveStream.Position = (long)waveView.SelectionStart;
                 waveView.RenderPositionLine(true);
             }
-            waveView.InvalidateVisual();
+            waveView.UpdateVisuals();
         }
 
         private void Split_Click(object sender, RoutedEventArgs e)
@@ -996,8 +1010,10 @@ namespace VADEdit
             {
                 MessageBox.Show(ex.Message, "Program Error", MessageBoxButton.OK, MessageBoxImage.Error);
             }
-            Background = (SolidColorBrush)(new BrushConverter()).ConvertFromString(Settings.AppBackgroundColor);
-            waveView.InvalidateVisual();
+
+            Background = (SolidColorBrush)Utils.BrushConverter.ConvertFromString(Settings.AppBackgroundColor);
+            menuBar.Foreground = (SolidColorBrush)Utils.BrushConverter.ConvertFromString(Settings.ChunkTextColor);
+            waveView.UpdateVisuals();
             foreach (var chunkView in grdTime.Children.OfType<AudioChunkView>())
             {
                 chunkView.UpdateVisuals();
@@ -1053,6 +1069,8 @@ namespace VADEdit
                 insertIndex: grdTime.Children.Contains(currentChunkView) ? grdTime.Children.IndexOf(currentChunkView) + 1 : 0,
                 focus: true
             );
+
+            Modified = true;
         }
 
         private void RevealFolder_Click(object sender, RoutedEventArgs e)

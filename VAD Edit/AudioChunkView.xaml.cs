@@ -3,6 +3,7 @@ using System.Windows;
 using System.Windows.Controls;
 using System.Windows.Input;
 using System.Windows.Media;
+using VADEdit.Types;
 
 namespace VADEdit
 {
@@ -142,7 +143,7 @@ namespace VADEdit
 
             btnDrag.DragStarted += delegate
             {
-                BorderBrush = (SolidColorBrush)(new BrushConverter()).ConvertFromString("#808080");
+                BorderBrush = (SolidColorBrush)Utils.BrushConverter.ConvertFromString("#808080");
                 Panel.SetZIndex(this, 1);
             };
         }
@@ -232,22 +233,22 @@ namespace VADEdit
                     grdBackground.Background = Application.Current.MainWindow.Background;
                     break;
                 case State.STTSuccess:
-                    grdBackground.Background = (SolidColorBrush)(new BrushConverter()).ConvertFromString(Settings.ChunkSTTColor);
+                    grdBackground.Background = (SolidColorBrush)Utils.BrushConverter.ConvertFromString(Settings.ChunkSTTColor);
                     break;
                 case State.Error:
-                    grdBackground.Background = (SolidColorBrush)(new BrushConverter()).ConvertFromString(Settings.ChunkErrorColor);
+                    grdBackground.Background = (SolidColorBrush)Utils.BrushConverter.ConvertFromString(Settings.ChunkErrorColor);
                     break;
                 case State.ExportSuccess:
-                    grdBackground.Background = (SolidColorBrush)(new BrushConverter()).ConvertFromString(Settings.ChunkExportColor);
+                    grdBackground.Background = (SolidColorBrush)Utils.BrushConverter.ConvertFromString(Settings.ChunkExportColor);
                     break;
             }
-            var textColor = (SolidColorBrush)(new BrushConverter()).ConvertFromString(Settings.ChunkTextColor);
+            var textColor = (SolidColorBrush)Utils.BrushConverter.ConvertFromString(Settings.ChunkTextColor);
             txtSpeech.CaretBrush = textColor;
             txtSpeech.Foreground = textColor;
             txtTime.Foreground = textColor;
             txtIndex.Foreground = textColor;
-            txtSpeech.SelectionBrush = (SolidColorBrush)(new BrushConverter()).ConvertFromString(Settings.ChunkTextSelectionColor);
-            grdSelect.Background = (SolidColorBrush)(new BrushConverter()).ConvertFromString(Settings.ChunkSelectionColor);
+            txtSpeech.SelectionBrush = (SolidColorBrush)Utils.BrushConverter.ConvertFromString(Settings.ChunkTextSelectionColor);
+            grdSelect.Background = (SolidColorBrush)Utils.BrushConverter.ConvertFromString(Settings.ChunkSelectionColor);
         }
     }
 }

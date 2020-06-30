@@ -10,6 +10,8 @@ using System.Windows.Input;
 using System.Windows.Media;
 using System.Windows.Shapes;
 using System.Windows.Threading;
+using VADEdit.Types;
+using static VADEdit.Utils;
 
 namespace VADEdit
 {
@@ -175,10 +177,10 @@ namespace VADEdit
 
                 await Task.Delay(100);
 
-                var timeBgColor = ((SolidColorBrush)(new BrushConverter()).ConvertFromString(Settings.AudioWaveBackgroundColor)).Color;
+                var timeBgColor = ((SolidColorBrush)Utils.BrushConverter.ConvertFromString(Settings.AudioWaveBackgroundColor)).Color;
                 timeBgColor.A = 200;
                 timeView.Background = new SolidColorBrush(timeBgColor);
-                timeView.Foreground = (SolidColorBrush)(new BrushConverter()).ConvertFromString(Settings.AudioWaveColor);
+                timeView.Foreground = (SolidColorBrush)Utils.BrushConverter.ConvertFromString(Settings.AudioWaveColor);
                 SetLeft(timeView, 0);
                 SetTop(timeView, ActualHeight - timeView.ActualHeight);
 
@@ -367,7 +369,7 @@ namespace VADEdit
         private double oldWidth = double.NaN;
         protected override void OnRender(DrawingContext drawingContext)
         {
-            var bgColor = (SolidColorBrush)(new BrushConverter()).ConvertFromString(Settings.AudioWaveBackgroundColor);
+            var bgColor = (SolidColorBrush)Utils.BrushConverter.ConvertFromString(Settings.AudioWaveBackgroundColor);
             drawingContext.DrawRectangle(bgColor, null, new Rect(0, 0, ActualWidth, ActualHeight)); // Draw Background
 
             if (WaveFormData != null)
@@ -386,7 +388,7 @@ namespace VADEdit
 
                 var visibleSample = WaveFormData.ToList().GetRange((int)(sampleSize * ScrollOffset), Math.Min((int)(sampleSize * (ActualWidth + 1)), waveSize));
 
-                var pen = new Pen((SolidColorBrush)(new BrushConverter()).ConvertFromString(Settings.AudioWaveColor), 1);
+                var pen = new Pen((SolidColorBrush)Utils.BrushConverter.ConvertFromString(Settings.AudioWaveColor), 1);
 
                 for (int i = 0; i < ActualWidth && (sampleSize * i) + sampleSize < visibleSample.Count(); i++)
                 {
@@ -408,7 +410,7 @@ namespace VADEdit
 
                 var selectionStart = Math.Max(-1, ((SelectionStart / WaveStream.Length) * WaveFormWidth) - ScrollOffset);
                 var selectionEnd = Math.Min(ActualWidth, ((SelectionEnd / WaveStream.Length) * WaveFormWidth) - ScrollOffset);
-                var selColor = (SolidColorBrush)new BrushConverter().ConvertFromString(Settings.AudioWaveSelectionColor);
+                var selColor = (SolidColorBrush)Utils.BrushConverter.ConvertFromString(Settings.AudioWaveSelectionColor);
                 if (selectionEnd - selectionStart >= 0)
                     drawingContext.DrawRectangle(selColor, null, new Rect(selectionStart, 0, selectionEnd - selectionStart, ActualHeight)); // Draw Selection
                 var lnColor = selColor.Color;
@@ -423,7 +425,7 @@ namespace VADEdit
                 var timeBgColor = bgColor.Color;
                 timeBgColor.A = 200;
                 timeView.Background = new SolidColorBrush(timeBgColor);
-                timeView.Foreground = (SolidColorBrush)(new BrushConverter()).ConvertFromString(Settings.AudioWaveColor);
+                timeView.Foreground = (SolidColorBrush)Utils.BrushConverter.ConvertFromString(Settings.AudioWaveColor);
                 SetLeft(timeView, 0);
                 SetTop(timeView, ActualHeight - timeView.ActualHeight);
             }
@@ -663,27 +665,6 @@ namespace VADEdit
             modifierShiftPressed = false;
 
             base.OnMouseEnter(e);
-        }
-    }
-
-    public struct TimeRange
-    {
-        public TimeSpan Start { get; set; }
-        public TimeSpan End { get; set; }
-
-        public TimeRange(TimeSpan from, TimeSpan to)
-        {
-            Start = from;
-            End = to;
-        }
-
-        public TimeRange(double secFrom, double secTo) :
-            this(TimeSpan.FromSeconds(secFrom), TimeSpan.FromSeconds(secTo))
-        { }
-
-        public override string ToString()
-        {
-            return $"{Start.ToString(@"hh\:mm\:ss\.fff")} - {End.ToString(@"hh\:mm\:ss\.fff")}";
         }
     }
 }
