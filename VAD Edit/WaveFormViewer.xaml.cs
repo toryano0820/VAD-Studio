@@ -302,35 +302,28 @@ namespace VADEdit
 
         private async void StartRenderPositionLine()
         {
-            try
+            while (Player.PlaybackState == PlaybackState.Playing)
             {
-                while (Player.PlaybackState == PlaybackState.Playing)
+                if (WaveStream.CurrentTime >= PlayRangeEnd)
                 {
-                    if (WaveStream.CurrentTime >= PlayRangeEnd)
-                    {
-                        Dispatcher.Invoke(() =>
-                        {
-                            btnPlayPause.Content = "4";
-                            btnPlayPause.Foreground = Brushes.Green;
-                            PlayRangeEnded?.Invoke(this, EventArgs.Empty);
-                        });
-                        Player.Stop();
-                    }
-
-                    RenderPositionLine();
-                    await Task.Delay(1);
+                    btnPlayPause.Content = "4";
+                    btnPlayPause.Foreground = Brushes.Green;
+                    PlayRangeEnded?.Invoke(this, EventArgs.Empty);
+                    Player.Stop();
                 }
+
+                RenderPositionLine();
+                await Task.Delay(5);
             }
-            catch (TaskCanceledException) { }
-            catch (Exception ex)
-            {
-                File.AppendAllText("error.log", $"{DateTime.Now.ToString("yyyyMMddHHmmss")} [ERROR]: {ex.Message}:\n{ex.StackTrace}\n");
-                MessageBox.Show(ex.Message, "Program Error", MessageBoxButton.OK, MessageBoxImage.Error);
-            }
+
+            btnPlayPause.Content = "4";
+            btnPlayPause.Foreground = Brushes.Green;
+            PlayRangeEnded?.Invoke(this, EventArgs.Empty);
+            Player.Stop();
         }
 
-        internal bool _renderingLine = false;
-        public void RenderPositionLine(bool scrollToPosition = false)
+        private bool _renderingLine = false;
+        public async void RenderPositionLine(bool scrollToPosition = false)
         {
             if (!_renderingLine)
             {
@@ -348,6 +341,7 @@ namespace VADEdit
                         ScrollOffset += curPosX;
                 }
             }
+            await Task.Yield();
         }
 
         private DrawingGroup drawingGroup { get; } = new DrawingGroup();
@@ -369,16 +363,23 @@ namespace VADEdit
                 var dc = drawingGroup.Open();
                 while (renderCounter > 0)
                 {
-                    await RenderTask(dc);
+                    RenderTask(dc);
                     renderCounter--;
                 }
                 dc.Close();
                 taskQueueRunning = false;
+
+                if (WaveStream != null)
+                {
+                    RenderPositionLine();
+                    UpdateSelection();
+                }
             }
+            await Task.Yield();
         }
 
         private double oldWidth = double.NaN;
-        private async Task RenderTask(DrawingContext drawingContext)
+        private void RenderTask(DrawingContext drawingContext)
         {
             if (!drawWave)
                 return;
@@ -386,44 +387,48 @@ namespace VADEdit
             drawWave = false;
 
             var bgColor = (SolidColorBrush)Utils.BrushConverter.ConvertFromString(Settings.AudioWaveBackgroundColor);
+            bgColor.Freeze();
             drawingContext.DrawRectangle(bgColor, null, new Rect(0, 0, ActualWidth, ActualHeight)); // Draw Background
 
-            if (WaveFormData != null)
+            if (WaveFormData == null)
+                return;
+
+            var sampleSize = waveFormSize / (WaveFormWidth + 1);
+
+            if (!oldWidth.Equals(double.NaN))
+                ScrollOffset = ScrollOffset * (ActualWidth / oldWidth);
+            else
+                ScrollOffset = ScrollOffset;
+
+            var multiplier = (ActualHeight * 0.9) / maxSpan;
+
+            var drawCenter = ((ActualHeight - ((WaveFormData.Average() * 2) * multiplier)) / 2);
+
+            var visibleSample = WaveFormData.GetRange((int)(sampleSize * ScrollOffset), Math.Min((int)(sampleSize * (ActualWidth + 1)), waveFormSize));
+
+            var pen = new Pen((SolidColorBrush)Utils.BrushConverter.ConvertFromString(Settings.AudioWaveColor), 1);
+            pen.Freeze();
+
+            var a = new Point(0, drawCenter);
+            var b = a;
+
+            for (int i = 0; i < ActualWidth && (sampleSize * i) + sampleSize < visibleSample.Count(); i++)
             {
-                var sampleSize = waveFormSize / (WaveFormWidth + 1);
-
-                if (!oldWidth.Equals(double.NaN))
-                    ScrollOffset = ScrollOffset * (ActualWidth / oldWidth);
-                else
-                    ScrollOffset = ScrollOffset;
-
-                var multiplier = (ActualHeight * 0.9) / maxSpan;
-
-                var drawCenter = ((ActualHeight - ((WaveFormData.Average() * 2) * multiplier)) / 2);
-
-                var visibleSample = WaveFormData.GetRange((int)(sampleSize * ScrollOffset), Math.Min((int)(sampleSize * (ActualWidth + 1)), waveFormSize));
-
-                var pen = new Pen((SolidColorBrush)Utils.BrushConverter.ConvertFromString(Settings.AudioWaveColor), 1);
-
-                for (int i = 0; i < ActualWidth && (sampleSize * i) + sampleSize < visibleSample.Count(); i++)
+                var sample = visibleSample.GetRange((int)(sampleSize * i), (int)(sampleSize)).ToArray();
+                if (sample.Length > 0)
                 {
-                    var sample = visibleSample.GetRange((int)(sampleSize * i), (int)(sampleSize)).ToArray();
-
-                    if (sample.Length > 0)
-                    {
-                        drawingContext.DrawLine(
-                            pen,
-                            new Point(i + 1, drawCenter + (-sample.Max() * multiplier)),
-                            new Point(i + 1, drawCenter + (-sample.Min() * multiplier)));
-                    }
+                    a = new Point(b.X, drawCenter + (-sample.Max() * multiplier));
+                    b = new Point(i + 1, drawCenter + (-sample.Min() * multiplier));
                 }
-
-                oldWidth = ActualWidth;
-                RenderPositionLine();
-                UpdateSelection();
+                else
+                {
+                    a = new Point(b.X, drawCenter);
+                    b = new Point(i + 1, drawCenter);
+                }
+                drawingContext.DrawLine(pen, a, b);
             }
 
-            await Task.Yield();
+            oldWidth = ActualWidth;
         }
 
         public void UpdateVisuals()
@@ -513,6 +518,7 @@ namespace VADEdit
             if (WaveStream != null)
             {
                 WaveStream = null;
+                Render();
                 Player.Stop();
             }
         }
