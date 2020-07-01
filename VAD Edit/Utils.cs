@@ -346,6 +346,26 @@ namespace VADEdit.Types
         {
             return $"{Start.ToString(@"hh\:mm\:ss\.fff")} - {End.ToString(@"hh\:mm\:ss\.fff")}";
         }
+
+        public override bool Equals(object obj)
+        {
+            return this == (TimeRange)obj;
+        }
+
+        public override int GetHashCode()
+        {
+            return base.GetHashCode();
+        }
+
+        public static bool operator ==(TimeRange r1, TimeRange r2)
+        {
+            return (r1.Start == r2.Start) && (r1.End == r2.End);
+        }
+
+        public static bool operator !=(TimeRange r1, TimeRange r2)
+        {
+            return (r1.Start != r2.Start) || (r1.End != r2.End);
+        }
     }
 }
 #endregion

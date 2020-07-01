@@ -42,7 +42,7 @@ namespace VADEdit
         };
 #endif
         private WaveStream waveStream = null;
-
+        private TimeRange currentSelection = new TimeRange();
         private string projectLocation = null;
         private string projectFileLocation = null;
         private string sourceLocation = null;
@@ -96,6 +96,12 @@ namespace VADEdit
                 var ex = e.Exception;
                 MessageBox.Show(ex.GetType().ToString() + ":\n" + ex.Message + "\n" + ex.StackTrace, "Task Error", MessageBoxButton.OK, MessageBoxImage.Error);
                 e.SetObserved();
+            };
+
+            SettingsWindow.ButtonClicked += (o, e) =>
+            {
+                if (e != SettingsWindow.Button.Cancel)
+                    ApplySettings();
             };
 
             Background = (SolidColorBrush)Utils.BrushConverter.ConvertFromString(Settings.AppBackgroundColor);
@@ -162,7 +168,7 @@ namespace VADEdit
             waveView.Play();
         }
 
-        private async Task LoadStream(string filePath, Func<Task> beforeHideWaitPanel=null)
+        private async Task LoadStream(string filePath, Func<Task> beforeHideWaitPanel = null)
         {
             sourceLocation = filePath;
             var fileName = filePath.Replace(@"\", "/").Split('/').Last();
@@ -309,190 +315,153 @@ namespace VADEdit
                 await Task.Delay(10);
         }
 
-        private void SplitSilence()
+        private async void SplitSilence()
         {
-            //cancelFlag = false;
-            //waveView.Pause();
+            cancelFlag = false;
+            waveView.Pause();
 
-            //grdTime.Children.Clear();
-            //currentChunkView = null;
-            //playingChunkView = null;
-            //ShowSelection(new TimeRange(TimeSpan.Zero, TimeSpan.Zero));
+            grdTime.Children.Clear();
+            currentChunkView = null;
+            playingChunkView = null;
+            ShowSelection(new TimeRange(TimeSpan.Zero, TimeSpan.Zero));
 
-            //txtWait.Text = "VAD processing... Please wait...";
-            //grdWait.Visibility = Visibility.Visible;
-            //grdMain.IsEnabled = false;
-            //btnAddChunk.IsEnabled = false;
+            txtWait.Text = "VAD processing... Please wait...";
+            grdWait.Visibility = Visibility.Visible;
+            grdMain.IsEnabled = false;
+            btnAddChunk.IsEnabled = false;
 
-            //var waveTotalMillis = waveStream.TotalTime.TotalMilliseconds;
-            //var waveData = waveView.WaveFormData;
-            //var waveDataLength = waveData.Count();
+            var waveTotalMillis = waveStream.TotalTime.TotalMilliseconds;
+            var waveData = waveView.WaveFormData;
+            var waveDataLength = waveData.Count();
 
-            //GC.Collect();
+            GC.Collect();
 
-            //if (Settings.SplitOnSilence)
-            //{
+            if (Settings.SplitOnSilence)
+            {
 
-            //    float minVolume = Settings.MinVolume;
-            //    int minLength = Settings.MinLength;
-            //    int maxSilenceMillis = Settings.MaxSilence;
+                float minVolume = Settings.MinVolume;
+                int minLength = Settings.MinLength;
+                int maxSilenceMillis = Settings.MaxSilence;
 
-            //    new Thread(() =>
-            //    {
-            //        try
-            //        {
-            //            int start = -1;
-            //            int end = -1;
+                try
+                {
+                    int start = -1;
+                    int end = -1;
 
-            //            int silenceCtr = 0;
-            //            var maxWidth = waveTotalMillis;
-            //            var max = waveData.Max();
+                    int silenceCtr = 0;
+                    var maxWidth = waveTotalMillis;
+                    var max = waveData.Max();
 
-            //            for (int i = 0; i < (int)maxWidth; i++)
-            //            {
-            //                if (cancelFlag)
-            //                {
-            //                    Dispatcher.Invoke(() =>
-            //                    {
-            //                        grdMain.IsEnabled = true;
-            //                        grdWait.Visibility = Visibility.Hidden;
-            //                    });
-            //                    break;
-            //                }
-            //                var secDataVolume = (waveData[(int)((i / maxWidth) * waveDataLength)] / max) * 100;
-            //                if (i == (int)maxWidth - 1 && start != -1)
-            //                {
-            //                    end = i + 1;
+                    for (int i = 0; i < (int)maxWidth; i++)
+                    {
+                        if (cancelFlag)
+                        {
+                            grdMain.IsEnabled = true;
+                            grdWait.Visibility = Visibility.Hidden;
+                            break;
+                        }
+                        var secDataVolume = (waveData[(int)((i / maxWidth) * waveDataLength)] / max) * 100;
+                        if (i == (int)maxWidth - 1 && start != -1)
+                        {
+                            end = i + 1;
 
-            //                    if (end - start > minLength)
-            //                    {
-            //                        Thread.Sleep(5);
-            //                        Dispatcher.Invoke(() =>
-            //                        {
-            //                            AddChunkView(new TimeRange(TimeSpan.FromMilliseconds(start), TimeSpan.FromMilliseconds(end)));
-            //                        });
-            //                    }
+                            if (end - start > minLength)
+                            {
+                                await Task.Delay(1);
+                                AddChunkView(new TimeRange(TimeSpan.FromMilliseconds(start), TimeSpan.FromMilliseconds(end)));
+                            }
 
-            //                    start = -1;
-            //                    end = -1;
-            //                    silenceCtr = 0;
-            //                }
-            //                else if (secDataVolume < minVolume)
-            //                {
-            //                    if (start != -1 && silenceCtr >= maxSilenceMillis)
-            //                    {
-            //                        if (i > start)
-            //                        {
-            //                            end = i - (maxSilenceMillis - 100);
+                            start = -1;
+                            end = -1;
+                            silenceCtr = 0;
+                        }
+                        else if (secDataVolume < minVolume)
+                        {
+                            if (start != -1 && silenceCtr >= maxSilenceMillis)
+                            {
+                                if (i > start)
+                                {
+                                    end = i - (maxSilenceMillis - 100);
 
-            //                            if (end - start > minLength)
-            //                            {
-            //                                Thread.Sleep(5);
-            //                                Dispatcher.Invoke(() =>
-            //                                {
-            //                                    AddChunkView(new TimeRange(TimeSpan.FromMilliseconds(start), TimeSpan.FromMilliseconds(end)));
-            //                                });
-            //                            }
-            //                        }
+                                    if (end - start > minLength)
+                                    {
+                                        await Task.Delay(1);
+                                        AddChunkView(new TimeRange(TimeSpan.FromMilliseconds(start), TimeSpan.FromMilliseconds(end)));
+                                    }
+                                }
 
-            //                        start = -1;
-            //                        end = -1;
-            //                        silenceCtr = 0;
-            //                        continue;
-            //                    }
-            //                    silenceCtr++;
-            //                }
-            //                else if (start == -1)
-            //                {
-            //                    silenceCtr = 0;
-            //                    start = Math.Max(i - 100, 0);
-            //                    end = -1;
-            //                }
-            //                else
-            //                {
-            //                    silenceCtr = 0;
-            //                    end = -1;
-            //                }
-            //            }
-            //        }
-            //        catch (TaskCanceledException) { }
-            //        catch (Exception ex)
-            //        {
-            //            //File.AppendAllText("error.log", $"{DateTime.Now.ToString("yyyyMMddHHmmss")} [ERROR]: {ex.Message}:\n{ex.StackTrace}\n");
-            //            Logger.Log($"{ex.Message}:\n{ex.StackTrace}", Logger.Type.Error);
-            //            MessageBox.Show(ex.Message, "Program Error", MessageBoxButton.OK, MessageBoxImage.Error);
-            //        }
+                                start = -1;
+                                end = -1;
+                                silenceCtr = 0;
+                                continue;
+                            }
+                            silenceCtr++;
+                        }
+                        else if (start == -1)
+                        {
+                            silenceCtr = 0;
+                            start = Math.Max(i - 100, 0);
+                            end = -1;
+                        }
+                        else
+                        {
+                            silenceCtr = 0;
+                            end = -1;
+                        }
+                    }
+                }
+                catch (TaskCanceledException) { }
+                catch (Exception ex)
+                {
+                    Logger.Log($"{ex.Message}:\n{ex.StackTrace}", Logger.Type.Error);
+                    MessageBox.Show(ex.Message, "Program Error", MessageBoxButton.OK, MessageBoxImage.Error);
+                }
 
-            //        GC.Collect();
+            }
+            else
+            {
+                var splitLength = Settings.SplitLength;
 
-            //        Dispatcher.Invoke(() =>
-            //        {
-            //            if (grdTime.Children.OfType<AudioChunkView>().Count() > 0)
-            //            {
-            //                btnExportAll.IsEnabled = true;
-            //                btnSttAll.IsEnabled = true;
-            //            }
-            //            grdMain.IsEnabled = true;
-            //            grdWait.Visibility = Visibility.Hidden;
-            //        });
-            //    }).Start();
-            //}
-            //else
-            //{
-            //    var splitLength = Settings.SplitLength;
+                try
+                {
+                    var waveMillisCounter = 0;
+                    while (waveMillisCounter < waveTotalMillis)
+                    {
+                        if (cancelFlag)
+                        {
+                            cancelFlag = false;
+                            grdMain.IsEnabled = true;
+                            grdWait.Visibility = Visibility.Hidden;
+                            break;
+                        }
 
-            //    new Thread(() =>
-            //    {
-            //        try
-            //        {
-            //            var waveMillisCounter = 0;
-            //            while (waveMillisCounter < waveTotalMillis)
-            //            {
-            //                if (cancelFlag)
-            //                {
-            //                    cancelFlag = false;
-            //                    Dispatcher.Invoke(() =>
-            //                    {
-            //                        grdMain.IsEnabled = true;
-            //                        grdWait.Visibility = Visibility.Hidden;
-            //                    });
-            //                    break;
-            //                }
+                        var end = waveMillisCounter + splitLength;
+                        if (end > waveTotalMillis)
+                            end = (int)waveTotalMillis;
 
-            //                Thread.Sleep(10);
-            //                var end = waveMillisCounter + splitLength;
-            //                if (end > waveTotalMillis)
-            //                    end = (int)waveTotalMillis;
-            //                Dispatcher.Invoke(() =>
-            //                {
-            //                    AddChunkView(new TimeRange(TimeSpan.FromMilliseconds(waveMillisCounter), TimeSpan.FromMilliseconds(end)));
-            //                });
+                        await Task.Delay(1);
+                        AddChunkView(new TimeRange(TimeSpan.FromMilliseconds(waveMillisCounter), TimeSpan.FromMilliseconds(end)));
 
-            //                waveMillisCounter += splitLength;
-            //            }
-            //        }
-            //        catch (TaskCanceledException) { }
-            //        catch (Exception ex)
-            //        {
-            //            //File.AppendAllText("error.log", $"{DateTime.Now.ToString("yyyyMMddHHmmss")} [ERROR]: {ex.Message}:\n{ex.StackTrace}\n");
-            //            Logger.Log($"{ex.Message}:\n{ex.StackTrace}", Logger.Type.Error);
-            //            MessageBox.Show(ex.Message, "Program Error", MessageBoxButton.OK, MessageBoxImage.Error);
-            //        }
+                        waveMillisCounter += splitLength;
+                    }
+                }
+                catch (TaskCanceledException) { }
+                catch (Exception ex)
+                {
+                    Logger.Log($"{ex.Message}:\n{ex.StackTrace}", Logger.Type.Error);
+                    MessageBox.Show(ex.Message, "Program Error", MessageBoxButton.OK, MessageBoxImage.Error);
+                }
+            }
 
-            //        GC.Collect();
+            GC.Collect();
 
-            //        Dispatcher.Invoke(() =>
-            //        {
-            //            if (grdTime.Children.OfType<AudioChunkView>().Count() > 0)
-            //            {
-            //                btnExportAll.IsEnabled = true;
-            //                btnSttAll.IsEnabled = true;
-            //            }
-            //            grdMain.IsEnabled = true;
-            //            grdWait.Visibility = Visibility.Hidden;
-            //        });
-            //    }).Start();
-            //}
+            if (grdTime.Children.OfType<AudioChunkView>().Count() > 0)
+            {
+                btnExportAll.IsEnabled = true;
+                btnSttAll.IsEnabled = true;
+            }
+            grdMain.IsEnabled = true;
+            grdWait.Visibility = Visibility.Hidden;
         }
 
         private string GetNextFileName()
@@ -531,7 +500,7 @@ namespace VADEdit
                     Logger.Log($"Processing STT on audio longer than {maxSeconds} seconds:\n    {sourceLocation}: {chunkView.TimeRange}", Logger.Type.Warn);
                     if (!suppressErrorDialogs)
                     {
-                        MessageBox.Show($"Will not process audio longer than {maxSeconds} seconds.", "Operation Warning", MessageBoxButton.OK, MessageBoxImage.Warning);
+                        MessageBox.Show($"Will not process audio longer than {maxSeconds} seconds.", "STT Warning", MessageBoxButton.OK, MessageBoxImage.Warning);
                     }
                     finishedCallback?.Invoke();
                 });
@@ -553,12 +522,12 @@ namespace VADEdit
 
                     while (alignStart() != (int)alignStart())
                     {
-                        start += 1;
+                        start++;
                     }
 
                     while (alignEnd() != (int)alignEnd())
                     {
-                        end += 1;
+                        end++;
                     }
 
                     waveStream.Position = start;
@@ -627,14 +596,12 @@ namespace VADEdit
                         }
                     }
 
-
                     throw new Exception("unrecognizable stream");
                 }
             }
             catch (TaskCanceledException) { }
             catch (Exception ex)
             {
-                //File.AppendAllText("error.log", $"{DateTime.Now.ToString("yyyyMMddHHmmss")} [ERROR]: {ex.Message}:\n{ex.StackTrace}\n");
                 Dispatcher.Invoke(() =>
                 {
                     chunkView.VisualState = AudioChunkView.State.Error;
@@ -644,7 +611,7 @@ namespace VADEdit
                 {
                     if (!suppressErrorDialogs)
                     {
-                        MessageBox.Show(ex.Message, "Program Error", MessageBoxButton.OK, MessageBoxImage.Error);
+                        MessageBox.Show(ex.Message, "STT Error", MessageBoxButton.OK, MessageBoxImage.Error);
                     }
                     finishedCallback?.Invoke();
                 });
@@ -871,13 +838,18 @@ namespace VADEdit
 
         private void ShowSelection(TimeRange range)
         {
+            if (range == currentSelection)
+                return;
+
+            currentSelection = range;
+
             var totalMs = waveStream.TotalTime.TotalMilliseconds;
             var lenWs = waveStream.Length;
-            waveView.SelectionStart = (range.Start.TotalMilliseconds / totalMs) * lenWs;
-            waveView.SelectionEnd = (range.End.TotalMilliseconds / totalMs) * lenWs;
+            waveView.SelectionStart = (long)((range.Start.TotalMilliseconds / totalMs) * lenWs);
+            waveView.SelectionEnd = (long)((range.End.TotalMilliseconds / totalMs) * lenWs);
             if (waveView.Player.PlaybackState != PlaybackState.Playing)
             {
-                waveStream.Position = (long)waveView.SelectionStart;
+                waveStream.Position = waveView.SelectionStart;
                 waveView.RenderPositionLine(true);
             }
             waveView.UpdateVisuals();
@@ -1000,24 +972,19 @@ namespace VADEdit
             }
         }
 
-        private void Options_Click(object sender, RoutedEventArgs e)
+        private void ApplySettings()
         {
-            try
-            {
-                SettingsWindow.Show();
-            }
-            catch (Exception ex)
-            {
-                MessageBox.Show(ex.Message, "Program Error", MessageBoxButton.OK, MessageBoxImage.Error);
-            }
-
             Background = (SolidColorBrush)Utils.BrushConverter.ConvertFromString(Settings.AppBackgroundColor);
-            menuBar.Foreground = (SolidColorBrush)Utils.BrushConverter.ConvertFromString(Settings.ChunkTextColor);
             waveView.UpdateVisuals();
             foreach (var chunkView in grdTime.Children.OfType<AudioChunkView>())
             {
                 chunkView.UpdateVisuals();
             }
+        }
+
+        private void Options_Click(object sender, RoutedEventArgs e)
+        {
+            SettingsWindow.Show();
         }
 
         protected override void OnClosing(CancelEventArgs e)
@@ -1029,14 +996,13 @@ namespace VADEdit
                 {
                     case MessageBoxResult.Cancel:
                         e.Cancel = true;
-                        cancelFlag = true;
                         break;
                     case MessageBoxResult.Yes:
                         SaveProject();
-                        break;
-                    case MessageBoxResult.No:
+                        cancelFlag = true;
                         break;
                     default:
+                        cancelFlag = true;
                         break;
                 }
             }
@@ -1063,8 +1029,8 @@ namespace VADEdit
 
             AddChunkView(
                 new TimeRange(
-                    (waveView.SelectionStart / totLen) * totTime,
-                    (waveView.SelectionEnd / totLen) * totTime
+                    ((double)waveView.SelectionStart / totLen) * totTime,
+                    ((double)waveView.SelectionEnd / totLen) * totTime
                 ),
                 insertIndex: grdTime.Children.Contains(currentChunkView) ? grdTime.Children.IndexOf(currentChunkView) + 1 : 0,
                 focus: true
@@ -1080,24 +1046,60 @@ namespace VADEdit
 
         private async void NewProject_Click(object sender, System.Windows.Input.ExecutedRoutedEventArgs e)
         {
+            if (grdWait.IsVisible)
+                return;
             waveView.Pause();
             var pi = NewProjectWindow.GetNewProjectInfo();
             if (pi != null)
             {
+                if (Modified)
+                {
+                    var msgResult = MessageBox.Show("There are unsaved changes.\nDo you want to save them before creating new project?", "Operation Confirmation", MessageBoxButton.YesNoCancel, MessageBoxImage.Question);
+                    switch (msgResult)
+                    {
+                        case MessageBoxResult.Cancel:
+                            return;
+                        case MessageBoxResult.Yes:
+                            SaveProject();
+                            cancelFlag = true;
+                            break;
+                        default:
+                            cancelFlag = true;
+                            break;
+                    }
+                }
                 projectLocation = Path.Combine(pi.Value.ProjectBaseLocation, pi.Value.ProjectName);
-                projectFileLocation = Path.Combine(projectLocation, "Project.vadedit");
+                projectFileLocation = Path.Combine(projectLocation, pi.Value.ProjectName + ".vadedit");
                 sourceLocation = pi.Value.MediaLocation;
                 Directory.CreateDirectory(projectLocation);
                 projectConfig = new ProjectConfig(projectFileLocation, pi.Value.ProjectName);
                 await ConvertLoad();
                 btnRevealFolder.IsEnabled = true;
-                btnSaveProject.IsEnabled = true;
+                btnSttAll.IsEnabled = true;
                 Modified = true;
             }
         }
 
         private async void OpenProject_Click(object sender, System.Windows.Input.ExecutedRoutedEventArgs e)
         {
+            if (grdWait.IsVisible)
+                return;
+            if (Modified)
+            {
+                var msgResult = MessageBox.Show("There are unsaved changes.\nDo you want to save them before opening another project?", "Operation Confirmation", MessageBoxButton.YesNoCancel, MessageBoxImage.Question);
+                switch (msgResult)
+                {
+                    case MessageBoxResult.Cancel:
+                        return;
+                    case MessageBoxResult.Yes:
+                        SaveProject();
+                        cancelFlag = true;
+                        break;
+                    default:
+                        cancelFlag = true;
+                        break;
+                }
+            }
             var dlg = new System.Windows.Forms.OpenFileDialog()
             {
                 Filter = "VAD Project|*.vadedit",
@@ -1126,6 +1128,7 @@ namespace VADEdit
                         Modified = false;
                     });
                     btnRevealFolder.IsEnabled = true;
+                    btnSttAll.IsEnabled = true;
                 }
             }
             dlg.Dispose();
@@ -1134,6 +1137,8 @@ namespace VADEdit
 
         private async void SaveProject()
         {
+            if (grdWait.IsVisible)
+                return;
             if (Modified && projectConfig != null)
             {
                 txtWait.Text = "Saving Project... Please wait...";

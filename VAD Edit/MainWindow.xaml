@@ -22,7 +22,7 @@
             <RowDefinition Height="20" />
             <RowDefinition />
         </Grid.RowDefinitions>
-        <Menu Background="Transparent" Name="menuBar">
+        <Menu Name="menuBar">
             <MenuItem Header="File">
                 <MenuItem Header="New Project" Command="New"/>
                 <MenuItem Header="Open Project ..." Command="Open"/>

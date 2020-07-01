@@ -178,12 +178,10 @@
       <DependentUpon>SettingsWindow.xaml</DependentUpon>
     </Compile>
     <Compile Include="Utils.cs" />
-    <Compile Include="WaveFormView.cs" />
     <Compile Include="WaveFormViewer.xaml.cs">
       <DependentUpon>WaveFormViewer.xaml</DependentUpon>
       <SubType>Code</SubType>
     </Compile>
-    <Compile Include="WaveFormViewFullBAK.cs" />
     <Page Include="AudioChunkView.xaml">
       <SubType>Designer</SubType>
       <Generator>MSBuild:Compile</Generator>

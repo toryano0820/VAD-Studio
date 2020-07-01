@@ -9,7 +9,6 @@ using System.Windows;
 using System.Windows.Controls;
 using System.Windows.Input;
 using System.Windows.Media;
-using System.Windows.Threading;
 using VADEdit.Types;
 using static VADEdit.Utils;
 
@@ -36,7 +35,7 @@ namespace VADEdit
             {
                 var @this = o as WaveFormViewer;
                 @this.drawWave = true;
-                @this.InvalidateVisual();
+                @this.Render();
             }, (o, e) =>
             {
                 var @this = o as WaveFormViewer;
@@ -58,7 +57,7 @@ namespace VADEdit
             {
                 var @this = o as WaveFormViewer;
                 @this.drawWave = true;
-                @this.InvalidateVisual();
+                @this.Render();
             }, (o, e) =>
             {
                 var @this = o as WaveFormViewer;
@@ -67,18 +66,18 @@ namespace VADEdit
             }));
 
 
-        public double SelectionStart
+        public long SelectionStart
         {
-            get { return (double)GetValue(SelectionStartProperty); }
+            get { return (long)GetValue(SelectionStartProperty); }
             set { SetValue(SelectionStartProperty, value); }
         }
 
         // Using a DependencyProperty as the backing store for SelectionStart.  This enables animation, styling, binding, etc...
         public static readonly DependencyProperty SelectionStartProperty =
-            DependencyProperty.Register("SelectionStart", typeof(double), typeof(WaveFormViewer), new PropertyMetadata(0.0, (o, e) =>
+            DependencyProperty.Register("SelectionStart", typeof(long), typeof(WaveFormViewer), new PropertyMetadata(0L, (o, e) =>
             {
                 var @this = o as WaveFormViewer;
-                var value = (double)e.NewValue;
+                var value = (long)e.NewValue;
 
                 if (value > @this.SelectionEnd)
                     @this.SelectionEnd = value;
@@ -87,18 +86,18 @@ namespace VADEdit
             }));
 
 
-        public double SelectionEnd
+        public long SelectionEnd
         {
-            get { return (double)GetValue(SelectionEndProperty); }
+            get { return (long)GetValue(SelectionEndProperty); }
             set { SetValue(SelectionEndProperty, value); }
         }
 
         // Using a DependencyProperty as the backing store for SelectionEnd.  This enables animation, styling, binding, etc...
         public static readonly DependencyProperty SelectionEndProperty =
-            DependencyProperty.Register("SelectionEnd", typeof(double), typeof(WaveFormViewer), new PropertyMetadata(0.0, (o, e) =>
+            DependencyProperty.Register("SelectionEnd", typeof(long), typeof(WaveFormViewer), new PropertyMetadata(0L, (o, e) =>
             {
                 var @this = o as WaveFormViewer;
-                var value = (double)e.NewValue;
+                var value = (long)e.NewValue;
 
                 if (value < @this.SelectionStart)
                     @this.SelectionStart = value;
@@ -149,6 +148,7 @@ namespace VADEdit
 
         private long waveSize = 0L;
         private int waveFormSize = 0;
+        private TimeSpan waveDuration = TimeSpan.Zero;
         private double maxSpan = 0.0;
         private double downX = 0.0;
         private double downScroll = 0.0;
@@ -171,7 +171,8 @@ namespace VADEdit
 
             SizeChanged += delegate
             {
-                UpdateVisuals();
+                drawWave = true;
+                Render();
             };
         }
 
@@ -181,6 +182,7 @@ namespace VADEdit
             WaveFormData = null;
             waveSize = 0L;
             waveFormSize = 0;
+            waveDuration = TimeSpan.Zero;
             UpdateVisuals();
 
             var thread = new Thread(() =>
@@ -198,6 +200,7 @@ namespace VADEdit
                         return;
 
                     waveStream.Position = 0L;
+                    waveDuration = waveStream.TotalTime;
 
                     int sampleSize = 0;
 
@@ -277,6 +280,7 @@ namespace VADEdit
                     WaveFormData = null;
                     waveSize = 0L;
                     waveFormSize = 0;
+                    waveDuration = TimeSpan.Zero;
                     File.AppendAllText("error.log", $"{DateTime.Now.ToString("yyyyMMddHHmmss")} [ERROR]: {ex.Message}:\n{ex.StackTrace}\n");
                     MessageBox.Show(ex.Message, "Program Error", MessageBoxButton.OK, MessageBoxImage.Error);
                 }
@@ -287,6 +291,7 @@ namespace VADEdit
                 {
                     drawWave = true;
                     UpdateVisuals();
+                    btnPlayPause.IsEnabled = (WaveStream != null);
                     callback?.Invoke(WaveStream != null);
                 });
             });
@@ -295,35 +300,33 @@ namespace VADEdit
                 await Task.Delay(10);
         }
 
-        private void StartRenderPositionLine()
+        private async void StartRenderPositionLine()
         {
-            new Thread(() =>
+            try
             {
-                try
+                while (Player.PlaybackState == PlaybackState.Playing)
                 {
-                    while (Player.PlaybackState == PlaybackState.Playing)
+                    if (WaveStream.CurrentTime >= PlayRangeEnd)
                     {
-                        if (WaveStream.CurrentTime >= PlayRangeEnd)
-                        {
-                            Dispatcher.Invoke(() =>
-                            {
-                                PlayRangeEnded?.Invoke(this, EventArgs.Empty);
-                            });
-                            Player.Stop();
-                        }
                         Dispatcher.Invoke(() =>
                         {
-                            RenderPositionLine();
+                            btnPlayPause.Content = "4";
+                            btnPlayPause.Foreground = Brushes.Green;
+                            PlayRangeEnded?.Invoke(this, EventArgs.Empty);
                         });
+                        Player.Stop();
                     }
+
+                    RenderPositionLine();
+                    await Task.Delay(1);
                 }
-                catch (TaskCanceledException) { }
-                catch (Exception ex)
-                {
-                    File.AppendAllText("error.log", $"{DateTime.Now.ToString("yyyyMMddHHmmss")} [ERROR]: {ex.Message}:\n{ex.StackTrace}\n");
-                    MessageBox.Show(ex.Message, "Program Error", MessageBoxButton.OK, MessageBoxImage.Error);
-                }
-            }).Start();
+            }
+            catch (TaskCanceledException) { }
+            catch (Exception ex)
+            {
+                File.AppendAllText("error.log", $"{DateTime.Now.ToString("yyyyMMddHHmmss")} [ERROR]: {ex.Message}:\n{ex.StackTrace}\n");
+                MessageBox.Show(ex.Message, "Program Error", MessageBoxButton.OK, MessageBoxImage.Error);
+            }
         }
 
         internal bool _renderingLine = false;
@@ -347,11 +350,40 @@ namespace VADEdit
             }
         }
 
-        private double oldWidth = double.NaN;
+        private DrawingGroup drawingGroup { get; } = new DrawingGroup();
         protected override void OnRender(DrawingContext drawingContext)
+        {
+            Render();
+            drawingContext.DrawDrawing(drawingGroup);
+            base.OnRender(drawingContext);
+        }
+
+        private bool taskQueueRunning = false;
+        private int renderCounter = 0;
+        private async void Render()
+        {
+            renderCounter++;
+            if (!taskQueueRunning)
+            {
+                taskQueueRunning = true;
+                var dc = drawingGroup.Open();
+                while (renderCounter > 0)
+                {
+                    await RenderTask(dc);
+                    renderCounter--;
+                }
+                dc.Close();
+                taskQueueRunning = false;
+            }
+        }
+
+        private double oldWidth = double.NaN;
+        private async Task RenderTask(DrawingContext drawingContext)
         {
             if (!drawWave)
                 return;
+
+            drawWave = false;
 
             var bgColor = (SolidColorBrush)Utils.BrushConverter.ConvertFromString(Settings.AudioWaveBackgroundColor);
             drawingContext.DrawRectangle(bgColor, null, new Rect(0, 0, ActualWidth, ActualHeight)); // Draw Background
@@ -384,8 +416,6 @@ namespace VADEdit
                             new Point(i + 1, drawCenter + (-sample.Max() * multiplier)),
                             new Point(i + 1, drawCenter + (-sample.Min() * multiplier)));
                     }
-
-                    sample = null;
                 }
 
                 oldWidth = ActualWidth;
@@ -393,9 +423,7 @@ namespace VADEdit
                 UpdateSelection();
             }
 
-            drawWave = false;
-
-            base.OnRender(drawingContext);
+            await Task.Yield();
         }
 
         public void UpdateVisuals()
@@ -408,18 +436,18 @@ namespace VADEdit
             linePos.Stroke = new SolidColorBrush(lnColor);
 
             var timeBgColor = (Color)ColorConverter.ConvertFromString(Settings.AudioWaveBackgroundColor);
-            timeBgColor.A = 200;
+            timeBgColor.A = 220;
             txtTimeBG.Background = new SolidColorBrush(timeBgColor);
             txtTime.Foreground = (SolidColorBrush)Utils.BrushConverter.ConvertFromString(Settings.AudioWaveColor);
 
             drawWave = true;
-            InvalidateVisual();
+            Render();
         }
 
         private void UpdateSelection()
         {
-            var selectionStart = Math.Max(-1, ((SelectionStart / waveSize) * WaveFormWidth) - ScrollOffset);
-            var selectionEnd = Math.Min(ActualWidth, ((SelectionEnd / waveSize) * WaveFormWidth) - ScrollOffset);
+            var selectionStart = Math.Max(-1, (((double)SelectionStart / waveSize) * WaveFormWidth) - ScrollOffset);
+            var selectionEnd = Math.Min(ActualWidth, (((double)SelectionEnd / waveSize) * WaveFormWidth) - ScrollOffset);
             if (selectionEnd - selectionStart > 0)
             {
                 grdSelect.Margin = new Thickness(selectionStart, 0, 0, 0);
@@ -463,6 +491,9 @@ namespace VADEdit
 
                 Player.Play();
 
+                btnPlayPause.Content = ";";
+                btnPlayPause.Foreground = Brushes.Blue;
+
                 StartRenderPositionLine();
             }
         }
@@ -470,7 +501,11 @@ namespace VADEdit
         public void Pause()
         {
             if (WaveStream != null)
+            {
                 Player.Pause();
+                btnPlayPause.Content = "4";
+                btnPlayPause.Foreground = Brushes.Green;
+            }
         }
 
         public void Stop()
@@ -566,7 +601,7 @@ namespace VADEdit
                     if (adjustingStart)
                     {
                         var curPosX = ((downSelection + diffX) + ScrollOffset) / WaveFormWidth;
-                        var newValue = Math.Max(waveSize * curPosX, 0);
+                        var newValue = (long)Math.Max(waveSize * curPosX, 0);
                         if (newValue > SelectionEnd)
                         {
                             adjustingEnd = true;
@@ -579,7 +614,7 @@ namespace VADEdit
                     else if (adjustingEnd)
                     {
                         var curPosX = ((downSelection + diffX) + ScrollOffset) / WaveFormWidth;
-                        var newValue = Math.Max(waveSize * curPosX, 0);
+                        var newValue = (long)Math.Max(waveSize * curPosX, 0);
                         if (newValue < SelectionStart)
                         {
                             adjustingStart = true;
@@ -603,8 +638,8 @@ namespace VADEdit
             }
             else if (WaveStream != null)
             {
-                var selectionStartPosX = ((SelectionStart / waveSize) * WaveFormWidth) - ScrollOffset;
-                var selectionEndPosX = ((SelectionEnd / waveSize) * WaveFormWidth) - ScrollOffset;
+                var selectionStartPosX = (((double)SelectionStart / waveSize) * WaveFormWidth) - ScrollOffset;
+                var selectionEndPosX = (((double)SelectionEnd / waveSize) * WaveFormWidth) - ScrollOffset;
 
                 if (moveX > selectionStartPosX - 3 && moveX < selectionStartPosX + 3)
                 {
@@ -631,8 +666,8 @@ namespace VADEdit
                 var totTime = WaveStream.TotalTime.TotalSeconds;
                 SelectionChanged?.Invoke(this,
                     new TimeRange(
-                        (SelectionStart / totLen) * totTime,
-                        (SelectionEnd / totLen) * totTime
+                        ((double)SelectionStart / totLen) * totTime,
+                        ((double)SelectionEnd / totLen) * totTime
                     ));
             }
 
@@ -643,6 +678,7 @@ namespace VADEdit
             base.OnMouseLeftButtonUp(e);
         }
 
+        //bool _playToggled = false;
         protected override async void OnMouseEnter(MouseEventArgs e)
         {
             while (IsMouseOver)
@@ -666,6 +702,22 @@ namespace VADEdit
                             Cursor = Cursors.IBeam;
                         else
                             Cursor = Cursors.Arrow;
+
+                        if (Keyboard.IsKeyDown(Key.Escape))
+                        {
+                            SelectionStart = 0;
+                            SelectionEnd = 0;
+
+                            SelectionChanged?.Invoke(this, new TimeRange());
+                        }
+
+                        //var spacePressed = Keyboard.IsKeyDown(Key.Space);
+                        //if (spacePressed && !_playToggled)
+                        //{
+                        //    TogglePlay();
+                        //}
+
+                        //_playToggled = spacePressed;
                     }
                     else
                         Cursor = Cursors.Arrow;
@@ -676,6 +728,33 @@ namespace VADEdit
             modifierShiftPressed = false;
 
             base.OnMouseEnter(e);
+        }
+
+        private TimeSpan TimeFromPosition(long position)
+        {
+            if (WaveStream != null)
+            {
+                return TimeSpan.FromMilliseconds((position / (double)waveSize) * waveDuration.TotalMilliseconds);
+            }
+            return TimeSpan.Zero;
+        }
+
+        private void TogglePlay()
+        {
+            if (btnPlayPause.Content.ToString() == "4")
+            {
+                if (SelectionEnd > SelectionStart)
+                    Play(new TimeRange(TimeFromPosition(SelectionStart), TimeFromPosition(SelectionEnd)));
+                else
+                    Play(WaveStream.CurrentTime);
+            }
+            else
+                Pause();
+        }
+
+        private void BtnPlayPause_Click(object sender, RoutedEventArgs e)
+        {
+            TogglePlay();
         }
     }
 }

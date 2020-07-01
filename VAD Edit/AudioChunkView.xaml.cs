@@ -98,7 +98,8 @@ namespace VADEdit
 
             StaticFocused += delegate
             {
-                grdSelect.Visibility = Visibility.Hidden;
+                if (grdSelect.IsVisible)
+                    grdSelect.Visibility = Visibility.Hidden;
             };
 
             btnDrag.DragCompleted += (o, e) =>
@@ -201,7 +202,7 @@ namespace VADEdit
                 VisualState = State.Idle;
                 TextChanged?.Invoke(this, EventArgs.Empty);
             }
-             // IsFocused
+            // IsFocused
         }
 
         protected override void OnPreviewMouseLeftButtonDown(MouseButtonEventArgs e)
@@ -223,6 +224,11 @@ namespace VADEdit
         {
             if (Keyboard.FocusedElement != txtSpeech)
                 Keyboard.Focus(txtSpeech);
+        }
+
+        public void Unselect()
+        {
+            StaticFocused?.Invoke(this, EventArgs.Empty);
         }
 
         public void UpdateVisuals()

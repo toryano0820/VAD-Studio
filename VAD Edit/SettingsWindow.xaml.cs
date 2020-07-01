@@ -15,6 +15,15 @@ namespace VADEdit
     /// </summary>
     public partial class SettingsWindow : Window
     {
+        public enum Button
+        {
+            OK,
+            Cancel,
+            Apply
+        }
+
+        public static event EventHandler<Button> ButtonClicked;
+
         public SettingsWindow()
         {
             InitializeComponent();
@@ -115,46 +124,60 @@ namespace VADEdit
             };
         }
 
+        public static void Apply(SettingsWindow win)
+        {
+            Settings.SplitOnSilence = win.chkSplitOnSilence.IsChecked.Value;
+            Settings.SplitLength = int.Parse(win.txtSplitLength.Text);
+            Settings.MaxSilence = int.Parse(win.txtMaxSilence.Text);
+            Settings.MinLength = int.Parse(win.txtMinLength.Text);
+            Settings.MinVolume = float.Parse(win.txtMinVolume.Text);
+            Settings.BatchSize = int.Parse(win.txtBatchSize.Text);
+            Settings.LanguageCode = win.cmbLanguage.Text;
+            Settings.STTCredentialtPath = win.txtSttCredentialPath.Text;
+            Settings.IncludeSttResult = win.chkIncludeSttResult.IsChecked.Value;
+            Settings.IncludeAudioFileSize = win.chkIncludeAudioFileSize.IsChecked.Value;
+            Settings.IncludeAudioLengthMillis = win.chkIncludeAudioLengthMillis.IsChecked.Value;
+            Settings.AudioWaveBackgroundColor = win.clrAudioWaveBackground.SelectedColorText;
+            Settings.AudioWaveColor = win.clrAudioWave.SelectedColorText;
+            Settings.AudioWaveSelectionColor = win.clrAudioWaveSelection.SelectedColorText;
+            Settings.ChunkErrorColor = win.clrChunkError.SelectedColorText;
+            Settings.ChunkExportColor = win.clrChunkExport.SelectedColorText;
+            Settings.ChunkSTTColor = win.clrChunkSTT.SelectedColorText;
+            Settings.ChunkTextColor = win.clrChunkText.SelectedColorText;
+            Settings.ChunkSelectionColor = win.clrChunkSelection.SelectedColorText;
+            Settings.ChunkTextSelectionColor = win.clrChunkTextSelection.SelectedColorText;
+            Settings.AppBackgroundColor = win.clrAppBackground.SelectedColorText;
+            Settings.ProjectBaseLocation = win.txtProjectBaseLocation.Text;
+            Settings.Save();
+        }
+
+        private void ShowNormal()
+        {
+            base.Show();
+        }
+
         public static new void Show()
         {
-            var win = new SettingsWindow();
+            new SettingsWindow().ShowNormal();
+        }
 
-            if (win.ShowDialog() == true)
-            {
-                Settings.SplitOnSilence = win.chkSplitOnSilence.IsChecked.Value;
-                Settings.SplitLength = int.Parse(win.txtSplitLength.Text);
-                Settings.MaxSilence = int.Parse(win.txtMaxSilence.Text);
-                Settings.MinLength = int.Parse(win.txtMinLength.Text);
-                Settings.MinVolume = float.Parse(win.txtMinVolume.Text);
-                Settings.BatchSize = int.Parse(win.txtBatchSize.Text);
-                Settings.LanguageCode = win.cmbLanguage.Text;
-                Settings.STTCredentialtPath = win.txtSttCredentialPath.Text;
-                Settings.IncludeSttResult = win.chkIncludeSttResult.IsChecked.Value;
-                Settings.IncludeAudioFileSize = win.chkIncludeAudioFileSize.IsChecked.Value;
-                Settings.IncludeAudioLengthMillis = win.chkIncludeAudioLengthMillis.IsChecked.Value;
-                Settings.AudioWaveBackgroundColor = win.clrAudioWaveBackground.SelectedColorText;
-                Settings.AudioWaveColor = win.clrAudioWave.SelectedColorText;
-                Settings.AudioWaveSelectionColor = win.clrAudioWaveSelection.SelectedColorText;
-                Settings.ChunkErrorColor = win.clrChunkError.SelectedColorText;
-                Settings.ChunkExportColor = win.clrChunkExport.SelectedColorText;
-                Settings.ChunkSTTColor = win.clrChunkSTT.SelectedColorText;
-                Settings.ChunkTextColor = win.clrChunkText.SelectedColorText;
-                Settings.ChunkSelectionColor = win.clrChunkSelection.SelectedColorText;
-                Settings.ChunkTextSelectionColor = win.clrChunkTextSelection.SelectedColorText;
-                Settings.AppBackgroundColor = win.clrAppBackground.SelectedColorText;
-                Settings.ProjectBaseLocation = win.txtProjectBaseLocation.Text;
-                Settings.Save();
-            }
+        private void Apply_Click(object sender, RoutedEventArgs e)
+        {
+            Apply(this);
+            ButtonClicked?.Invoke(this, Button.Apply);
         }
 
         private void OK_Click(object sender, RoutedEventArgs e)
         {
-            DialogResult = true;
+            Apply(this);
+            ButtonClicked?.Invoke(this, Button.OK);
+            Close();
         }
 
         private void Cancel_Click(object sender, RoutedEventArgs e)
         {
-            DialogResult = false;
+            ButtonClicked?.Invoke(this, Button.Cancel);
+            Close();
         }
 
         private void btnSttCredentialPath_Click(object sender, RoutedEventArgs e)

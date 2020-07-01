@@ -94,8 +94,9 @@
             </StackPanel>
         </ScrollViewer>
         <StackPanel Grid.Row="1" Margin="20" Orientation="Horizontal" FlowDirection="RightToLeft">
-            <Button Content="Cancel" Width="76" Height="25" IsCancel="True" Click="Cancel_Click"/>
-            <Button Content="OK" Margin="8,0" Width="75" Height="25" IsDefault="True" Click="OK_Click"/>
+            <Button Content="Apply" Width="75" Height="25" IsDefault="True" Click="Apply_Click"/>
+            <Button Content="Cancel" Margin="8,0,0,0" Width="76" Height="25" IsCancel="True" Click="Cancel_Click"/>
+            <Button Content="OK" Margin="8,0,0,0" Width="75" Height="25" IsDefault="True" Click="OK_Click"/>
         </StackPanel>
     </Grid>
 
