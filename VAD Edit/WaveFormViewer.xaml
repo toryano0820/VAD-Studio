@@ -13,7 +13,11 @@
             </Label.Effect>
         </Label>
         <Label Name="grdSelect" VerticalAlignment="Stretch" Width="0" Background="Red" HorizontalAlignment="Left" IsHitTestVisible="False"/>
-        <Line Name="linePos" Stroke="Black" StrokeThickness="1" X1="0" Y1="0" X2="0" Y2="{Binding ActualHeight, ElementName=this}" IsHitTestVisible="False" />
+        <Label Name="linePos" Background="Black" Width="1" HorizontalAlignment="Left" IsHitTestVisible="False">
+            <Label.RenderTransform>
+                <TranslateTransform x:Name="linePosTranslate" />
+            </Label.RenderTransform>
+        </Label>
         <Grid Name="grdControls" VerticalAlignment="Bottom" HorizontalAlignment="Left">
             <local:ImageButton x:Name="btnPlayPause" Margin="2" HorizontalAlignment="Left" CornerRadius="5" Background="Transparent" PressedBackground="#55000000" MouseOverBackground="#22000000" ContentMargin="0" Content="4" FontFamily="Webdings" FontSize="35" FontWeight="Normal" Foreground="Green" DisabledForeground="Gray" IsEnabled="False" Click="BtnPlayPause_Click"/>
             <Label Name="txtTime" Margin="35,0,0,0" Content="00:00:00.000 / 00:00:00.000" VerticalAlignment="Center" IsHitTestVisible="False" />

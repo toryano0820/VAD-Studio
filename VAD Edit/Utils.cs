@@ -1,5 +1,6 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.Drawing;
 using System.Globalization;
 using System.IO;
 using System.Net;
@@ -9,11 +10,10 @@ using System.Text;
 using System.Threading;
 using System.Windows;
 using System.Windows.Data;
+using System.Windows.Forms;
 using System.Windows.Interop;
 using System.Windows.Media;
 using System.Windows.Media.Effects;
-using System.Drawing;
-using System.Windows.Forms;
 
 namespace VADEdit
 {
@@ -136,9 +136,9 @@ namespace VADEdit
         #region Logger
         public static class Logger
         {
-            static bool loggerRunning = false;
-            static Queue<string> logLines = new Queue<string>();
-            static bool appRunning = true;
+            private static bool loggerRunning = false;
+            private static Queue<string> logLines = new Queue<string>();
+            private static bool appRunning = true;
 
             public static void Initialize()
             {
@@ -173,7 +173,7 @@ namespace VADEdit
                 }
             }
 
-            public static void Log(string message, Type type=Type.Info)
+            public static void Log(string message, Type type = Type.Info)
             {
                 logLines.Enqueue($"{DateTime.Now.ToString("yyyyMMddHHmmss")} [{type.ToString().ToUpper()}]: {message}\n");
             }
@@ -327,6 +327,19 @@ namespace VADEdit
 #region Types
 namespace VADEdit.Types
 {
+    public struct WaveSelectionChangedEventArgs
+    {
+        public enum SelectionEvent
+        {
+            New,
+            Resize,
+            Hide
+        }
+
+        public TimeRange TimeRange { get; set; }
+        public SelectionEvent Event { get; set; }
+    }
+
     public struct TimeRange
     {
         public TimeSpan Start { get; set; }

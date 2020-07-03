@@ -36,15 +36,16 @@
                 <MenuItem Header="Convert &amp; Load ..." Name="btnConverLoad" IsEnabled="False" Click="ConvertLoad_Click"/>
                 <Separator />
                 <MenuItem Header="Split" Name="btnSplit" IsEnabled="False" Click="Split_Click"/>
+                <Separator />
                 <MenuItem Header="Add Chunk" Name="btnAddChunk" IsEnabled="False" Click="AddChunk_Click"/>
+                <MenuItem Header="Remove All Chunks" Name="btnRemoveChunks" IsEnabled="False" Click="RemoveChunks_Click"/>
+                <MenuItem Header="Clear All" Name="btnClearChunks" IsEnabled="False" Click="ClearChunks_Click" ToolTip="Clear all STT and Speech texts"/>
+                <MenuItem Header="Reset Export State" Name="btnResetChunks" IsEnabled="False" Click="ResetChunks_Click" ToolTip="Make all chunks available for exporting"/>
+                <Separator />
                 <MenuItem Header="Batch STT" Name="btnSttAll" IsEnabled="False" Click="SttAll_Click"/>
                 <MenuItem Header="Batch Export" Name="btnExportAll" IsEnabled="False" Click="ExportAll_Click"/>
-                <Separator />
-                <MenuItem Header="Find ..." IsEnabled="False" />
-            </MenuItem>
-            <MenuItem Header="Media">
-                <MenuItem Header="Play" Name="btnPlay" IsEnabled="False" Click="Play_Clicked"/>
-                <MenuItem Header="Pause" Name="btnPause" IsEnabled="False" Click="Pause_Click"/>
+                <!--<Separator />
+                <MenuItem Header="Find ..." IsEnabled="False" />-->
             </MenuItem>
             <MenuItem Header="Settings" Click="Options_Click"/>
         </Menu>
@@ -55,7 +56,7 @@
                 <RowDefinition Height="30" />
             </Grid.RowDefinitions>
             <Border BorderThickness="1" BorderBrush="Gray" Margin="10,10,10,0" Height="167" VerticalAlignment="Top">
-                <local:WaveFormViewer x:Name="waveView" PlayRangeEnded="waveView_PlayRangeEnded" ClipToBounds="True"/>
+                <local:WaveFormViewer x:Name="waveView" ClipToBounds="True"/>
             </Border>
             <Border BorderThickness="1" BorderBrush="Gray" Grid.Row="1" Margin="10">
                 <ScrollViewer Name="chunkScroller" HorizontalScrollBarVisibility="Disabled" VerticalScrollBarVisibility="Auto" Focusable="False">

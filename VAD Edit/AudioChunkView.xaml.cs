@@ -1,4 +1,5 @@
 ﻿using System;
+using System.Threading.Tasks;
 using System.Windows;
 using System.Windows.Controls;
 using System.Windows.Input;
@@ -14,11 +15,12 @@ namespace VADEdit
     {
         public static event EventHandler StaticFocused;
         public event EventHandler PlayButtonClicked;
+        public event EventHandler StopButtonClicked;
         public event EventHandler SttButtonClicked;
         public event EventHandler DuplicateButtonClicked;
         public event EventHandler ExportButtonClicked;
+        public event EventHandler ResetButtonClicked;
         public event EventHandler DeleteButtonClicked;
-        public event EventHandler StopButtonClicked;
         public event EventHandler GotSelectionFocus;
         public event EventHandler TextChanged;
         public event EventHandler IndexChanged;
@@ -62,7 +64,7 @@ namespace VADEdit
 
         // Using a DependencyProperty as the backing store for SpeechText.  This enables animation, styling, binding, etc...
         public static readonly DependencyProperty SpeechTextProperty =
-            DependencyProperty.Register("SpeechText", typeof(string), typeof(AudioChunkView), new PropertyMetadata(null));
+            DependencyProperty.Register("SpeechText", typeof(string), typeof(AudioChunkView), new PropertyMetadata(""));
 
 
         public string SttText
@@ -73,7 +75,7 @@ namespace VADEdit
 
         // Using a DependencyProperty as the backing store for GSttText.  This enables animation, styling, binding, etc...
         public static readonly DependencyProperty GSttTextProperty =
-            DependencyProperty.Register("GSttText", typeof(string), typeof(AudioChunkView), new PropertyMetadata(null));
+            DependencyProperty.Register("GSttText", typeof(string), typeof(AudioChunkView), new PropertyMetadata(""));
 
         public State VisualState
         {
@@ -96,9 +98,9 @@ namespace VADEdit
 
             DataContext = this;
 
-            StaticFocused += delegate
+            StaticFocused += (o, e) =>
             {
-                if (grdSelect.IsVisible)
+                if ((o as AudioChunkView).Parent == Parent && grdSelect.IsVisible)
                     grdSelect.Visibility = Visibility.Hidden;
             };
 
@@ -255,6 +257,19 @@ namespace VADEdit
             txtIndex.Foreground = textColor;
             txtSpeech.SelectionBrush = (SolidColorBrush)Utils.BrushConverter.ConvertFromString(Settings.ChunkTextSelectionColor);
             grdSelect.Background = (SolidColorBrush)Utils.BrushConverter.ConvertFromString(Settings.ChunkSelectionColor);
+        }
+
+        private void btnReset_Click(object sender, RoutedEventArgs e)
+        {
+            VisualState = State.Idle;
+            ResetButtonClicked?.Invoke(this, EventArgs.Empty);
+        }
+
+        private void btnClear_Click(object sender, RoutedEventArgs e)
+        {
+            SpeechText = "";
+            SttText = "";
+            VisualState = State.Idle;
         }
     }
 }

@@ -4,8 +4,6 @@
              xmlns:local="clr-namespace:VADEdit"
              StartupUri="MainWindow.xaml">
     <Application.Resources>
-
-        <BorderGapMaskConverter x:Key="BorderGapMaskConverter"/>
         <Style x:Key="GroupBoxNoHeaderStyle" TargetType="{x:Type GroupBox}">
             <Setter Property="BorderBrush" Value="#D5DFE5"/>
             <Setter Property="BorderThickness" Value="1"/>

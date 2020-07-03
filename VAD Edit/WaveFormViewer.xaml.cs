@@ -3,7 +3,6 @@ using System;
 using System.Collections.Generic;
 using System.IO;
 using System.Linq;
-using System.Threading;
 using System.Threading.Tasks;
 using System.Windows;
 using System.Windows.Controls;
@@ -19,8 +18,8 @@ namespace VADEdit
     /// </summary>
     public partial class WaveFormViewer : UserControl
     {
-        public event EventHandler NewSelection;
-        public event EventHandler<TimeRange> SelectionChanged;
+        //public event EventHandler NewSelection;
+        public event EventHandler<WaveSelectionChangedEventArgs> SelectionChanged;
         public event EventHandler PlayRangeEnded;
 
         public double ScrollOffset
@@ -81,6 +80,8 @@ namespace VADEdit
 
                 if (value > @this.SelectionEnd)
                     @this.SelectionEnd = value;
+                
+                @this.PlayRangeStart = @this.TimeFromPosition(value);
 
                 @this.UpdateSelection();
             }));
@@ -101,6 +102,11 @@ namespace VADEdit
 
                 if (value < @this.SelectionStart)
                     @this.SelectionStart = value;
+
+                if (value == 0)
+                    value = @this.waveSize;
+
+                @this.PlayRangeEnd = @this.TimeFromPosition(value);
 
                 @this.UpdateSelection();
             }));
@@ -139,6 +145,7 @@ namespace VADEdit
         public double MinZoom { get; private set; } = 1.0;
         public List<float> WaveFormData { get; private set; }
         public TimeSpan PlayRangeEnd { get; set; } = TimeSpan.Zero;
+        public TimeSpan PlayRangeStart { get; set; } = TimeSpan.Zero;
 
         public WaveOut Player { get; } = new WaveOut()
         {
@@ -176,8 +183,10 @@ namespace VADEdit
             };
         }
 
-        public async Task SetWaveStream(string fileName, Action<bool> callback = null)
+        public async Task<bool> SetWaveStream(string fileName)
         {
+            await Task.Yield();
+
             WaveStream = null;
             WaveFormData = null;
             waveSize = 0L;
@@ -185,50 +194,48 @@ namespace VADEdit
             waveDuration = TimeSpan.Zero;
             UpdateVisuals();
 
-            var thread = new Thread(() =>
+            try
             {
-                try
+                var waveStream = new WaveFileReader(fileName);
+                if (waveStream.WaveFormat.Channels != 1 || waveStream.WaveFormat.SampleRate != 16000)
                 {
-                    var waveStream = new WaveFileReader(fileName);
-                    if (waveStream.WaveFormat.Channels != 1 || waveStream.WaveFormat.SampleRate != 16000)
-                    {
-                        throw new FileFormatException("Input should be 16kHz Mono WAV file.");
-                    }
-                    var wave = new WaveChannel32(waveStream);
+                    throw new FileFormatException("Input should be 16kHz Mono WAV file.");
+                }
+                var wave = new WaveChannel32(waveStream);
 
-                    if (wave == null)
-                        return;
+                if (wave == null)
+                    return false;
 
-                    waveStream.Position = 0L;
-                    waveDuration = waveStream.TotalTime;
+                waveStream.Position = 0L;
+                waveDuration = waveStream.TotalTime;
 
-                    int sampleSize = 0;
+                int sampleSize = 0;
 
-                    sampleSize = (from i in Utils.Range(1, 512)
-                                  let align = wave.WaveFormat.BlockAlign * (double)i
-                                  let v = wave.Length / align
-                                  where v == (int)v
-                                  select (int)align).Max();
+                sampleSize = (from i in Utils.Range(1, 512)
+                              let align = wave.WaveFormat.BlockAlign * (double)i
+                              let v = wave.Length / align
+                              where v == (int)v
+                              select (int)align).Max();
 
-                    var bufferSize = (int)(wave.Length / (double)sampleSize);
-                    int read = 0;
+                var bufferSize = (int)(wave.Length / (double)sampleSize);
+                int read = 0;
 
-                    //this.waveSize = waveStream.Length;
-                    waveSize = waveStream.Length;
+                //this.waveSize = waveStream.Length;
+                waveSize = waveStream.Length;
 
-                    Dispatcher.Invoke(() =>
-                    {
-                        ScrollOffset = 0.0;
-                        MaxZoom = Math.Max(wave.TotalTime.TotalSeconds / 4, MinZoom);
-                        Zoom = MinZoom;
-                        SelectionStart = 0;
-                        SelectionEnd = 0;
-                    });
+                ScrollOffset = 0.0;
+                MaxZoom = Math.Max(wave.TotalTime.TotalSeconds / 4, MinZoom);
+                Zoom = MinZoom;
+                SelectionStart = 0;
+                SelectionEnd = 0;
 
-                    var maxWidth = Math.Min(WpfScreen.AllScreens().OrderByDescending(s => s.WorkingArea.Width).First().WorkingArea.Width * MaxZoom, waveSize);
+                var maxWidth = Math.Min(WpfScreen.AllScreens().OrderByDescending(s => s.WorkingArea.Width).First().WorkingArea.Width * MaxZoom, waveSize);
 
-                    var iter = 0;
-                    var waveFormData = new float[(int)(maxWidth * 2)];
+                var iter = 0;
+                var waveFormData = new float[(int)(maxWidth * 2)];
+
+                await Task.Run(() =>
+                {
                     while (wave.Position < wave.Length)
                     {
                         var rwaIndex = 0;
@@ -246,8 +253,6 @@ namespace VADEdit
 
                         var wl = rawWaveArray.ToList();
                         var rwaCount = rawWaveArray.Length;
-                        Array.Resize(ref rawWaveArray, 0);
-                        rawWaveArray = null;
 
                         var samplesPerPixel = (rwaCount / (maxWidth / sampleSize));
 
@@ -265,73 +270,74 @@ namespace VADEdit
                         wl = null;
                         iter++;
                     }
-
-                    maxSpan = waveFormData.Max() - waveFormData.Min();
-                    Player.Init(waveStream);
-                    waveStream.Position = 0L;
-                    WaveStream = waveStream;
-                    WaveFormData = waveFormData.ToList();
-                    waveFormSize = waveFormData.Length;
-                }
-                catch (TaskCanceledException) { }
-                catch (Exception ex)
-                {
-                    WaveStream = null;
-                    WaveFormData = null;
-                    waveSize = 0L;
-                    waveFormSize = 0;
-                    waveDuration = TimeSpan.Zero;
-                    File.AppendAllText("error.log", $"{DateTime.Now.ToString("yyyyMMddHHmmss")} [ERROR]: {ex.Message}:\n{ex.StackTrace}\n");
-                    MessageBox.Show(ex.Message, "Program Error", MessageBoxButton.OK, MessageBoxImage.Error);
-                }
-
-                GC.Collect();
-
-                Dispatcher.Invoke(() =>
-                {
-                    drawWave = true;
-                    UpdateVisuals();
-                    btnPlayPause.IsEnabled = (WaveStream != null);
-                    callback?.Invoke(WaveStream != null);
                 });
-            });
-            thread.Start();
-            while (thread.IsAlive)
-                await Task.Delay(10);
+
+                maxSpan = waveFormData.Max() - waveFormData.Min();
+                Player.Init(waveStream);
+                waveStream.Position = 0L;
+                WaveStream = waveStream;
+                WaveFormData = waveFormData.ToList();
+                waveFormSize = waveFormData.Length;
+                PlayRangeEnd = WaveStream.TotalTime;
+            }
+            catch (TaskCanceledException) { }
+            catch (Exception ex)
+            {
+                WaveStream = null;
+                WaveFormData = null;
+                waveSize = 0L;
+                waveFormSize = 0;
+                waveDuration = TimeSpan.Zero;
+                Logger.Log($"{ex.Message}:\n{ex.StackTrace}", Logger.Type.Error);
+                MessageBox.Show(ex.Message, "Program Error", MessageBoxButton.OK, MessageBoxImage.Error);
+            }
+
+            GC.Collect();
+
+            drawWave = true;
+            Render();
+
+            var success = (WaveStream != null);
+            btnPlayPause.IsEnabled = success;
+
+            return success;
         }
 
         private async void StartRenderPositionLine()
         {
+            var steps = new List<double>();
+            var watch = new System.Diagnostics.Stopwatch();
             while (Player.PlaybackState == PlaybackState.Playing)
             {
                 if (WaveStream.CurrentTime >= PlayRangeEnd)
                 {
+                    Pause();
                     btnPlayPause.Content = "4";
                     btnPlayPause.Foreground = Brushes.Green;
                     PlayRangeEnded?.Invoke(this, EventArgs.Empty);
-                    Player.Stop();
+                    WaveStream.Position = PositionFromTime(PlayRangeEnd);
+                    RenderPositionLine();
+                    return;
                 }
 
                 RenderPositionLine();
-                await Task.Delay(5);
+                await Task.Delay(20);
             }
 
             btnPlayPause.Content = "4";
             btnPlayPause.Foreground = Brushes.Green;
             PlayRangeEnded?.Invoke(this, EventArgs.Empty);
-            Player.Stop();
         }
 
         private bool _renderingLine = false;
-        public async void RenderPositionLine(bool scrollToPosition = false)
+        public void RenderPositionLine(bool scrollToPosition = false)
         {
             if (!_renderingLine)
             {
                 _renderingLine = true;
+
                 var curPosX = (((double)WaveStream.Position / waveSize) * WaveFormWidth) - ScrollOffset;
-                linePos.X1 = curPosX;
-                linePos.X2 = curPosX;
-                _renderingLine = false;
+                linePosTranslate.X = curPosX;
 
                 txtTime.Content = $"{WaveStream.CurrentTime.ToString(@"hh\:mm\:ss\.fff")} / {WaveStream.TotalTime.ToString(@"hh\:mm\:ss\.fff")}";
 
@@ -340,8 +346,9 @@ namespace VADEdit
                     if (curPosX < 0 || curPosX > ActualWidth)
                         ScrollOffset += curPosX;
                 }
+
+                _renderingLine = false;
             }
-            await Task.Yield();
         }
 
         private DrawingGroup drawingGroup { get; } = new DrawingGroup();
@@ -372,7 +379,7 @@ namespace VADEdit
                 if (WaveStream != null)
                 {
                     RenderPositionLine();
-                    UpdateSelection();
+                    UpdateSelection(true);
                 }
             }
             await Task.Yield();
@@ -438,7 +445,7 @@ namespace VADEdit
 
             var lnColor = selColor.Color;
             lnColor.A = 255;
-            linePos.Stroke = new SolidColorBrush(lnColor);
+            linePos.Background = new SolidColorBrush(lnColor);
 
             var timeBgColor = (Color)ColorConverter.ConvertFromString(Settings.AudioWaveBackgroundColor);
             timeBgColor.A = 220;
@@ -449,7 +456,7 @@ namespace VADEdit
             Render();
         }
 
-        private void UpdateSelection()
+        private void UpdateSelection(bool fromRender = false)
         {
             var selectionStart = Math.Max(-1, (((double)SelectionStart / waveSize) * WaveFormWidth) - ScrollOffset);
             var selectionEnd = Math.Min(ActualWidth, (((double)SelectionEnd / waveSize) * WaveFormWidth) - ScrollOffset);
@@ -457,6 +464,8 @@ namespace VADEdit
             {
                 grdSelect.Margin = new Thickness(selectionStart, 0, 0, 0);
                 grdSelect.Width = selectionEnd - selectionStart;
+                if (!fromRender)
+                    Pause();
             }
             else
             {
@@ -486,8 +495,6 @@ namespace VADEdit
         {
             if (WaveStream != null)
             {
-                PlayRangeEnd = range.End;
-
                 WaveStream.CurrentTime = range.Start;
 
                 var curPosX = (((double)WaveStream.Position / waveSize) * WaveFormWidth) - ScrollOffset;
@@ -579,7 +586,14 @@ namespace VADEdit
 
                     if (SelectionStart != SelectionEnd)
                     {
-                        NewSelection?.Invoke(this, EventArgs.Empty);
+                        SelectionChanged?.Invoke(this, new WaveSelectionChangedEventArgs()
+                        {
+                            Event = WaveSelectionChangedEventArgs.SelectionEvent.New,
+                            TimeRange = new TimeRange(
+                                TimeFromPosition(SelectionStart),
+                                TimeFromPosition(SelectionEnd)
+                            )
+                        });
                     }
                 }
                 else
@@ -588,6 +602,8 @@ namespace VADEdit
                     var newPosX = (long)(waveSize * curPosX);
                     WaveStream.Position = newPosX;
                     RenderPositionLine();
+                    if (WaveStream.CurrentTime < PlayRangeStart || WaveStream.CurrentTime > PlayRangeEnd)
+                        Player.Pause();
                 }
 
                 Mouse.Capture(this);
@@ -668,13 +684,14 @@ namespace VADEdit
         {
             if (adjustingStart || adjustingEnd)
             {
-                var totLen = waveSize;
-                var totTime = WaveStream.TotalTime.TotalSeconds;
-                SelectionChanged?.Invoke(this,
-                    new TimeRange(
-                        ((double)SelectionStart / totLen) * totTime,
-                        ((double)SelectionEnd / totLen) * totTime
-                    ));
+                SelectionChanged?.Invoke(this, new WaveSelectionChangedEventArgs()
+                {
+                    Event = WaveSelectionChangedEventArgs.SelectionEvent.Resize,
+                    TimeRange = new TimeRange(
+                        TimeFromPosition(SelectionStart),
+                        TimeFromPosition(SelectionEnd)
+                    )
+                });
             }
 
             adjustingStart = false;
@@ -713,8 +730,14 @@ namespace VADEdit
                         {
                             SelectionStart = 0;
                             SelectionEnd = 0;
-
-                            SelectionChanged?.Invoke(this, new TimeRange());
+                            SelectionChanged?.Invoke(this, new WaveSelectionChangedEventArgs()
+                            {
+                                Event = WaveSelectionChangedEventArgs.SelectionEvent.Hide,
+                                TimeRange = new TimeRange(
+                                    TimeFromPosition(SelectionStart),
+                                    TimeFromPosition(SelectionEnd)
+                                )
+                            });
                         }
 
                         //var spacePressed = Keyboard.IsKeyDown(Key.Space);
@@ -736,7 +759,7 @@ namespace VADEdit
             base.OnMouseEnter(e);
         }
 
-        private TimeSpan TimeFromPosition(long position)
+        public TimeSpan TimeFromPosition(long position)
         {
             if (WaveStream != null)
             {
@@ -745,14 +768,30 @@ namespace VADEdit
             return TimeSpan.Zero;
         }
 
+        public long PositionFromTime(TimeSpan time)
+        {
+            if (WaveStream != null)
+            {
+                return (long)((time.TotalMilliseconds / waveDuration.TotalMilliseconds) * waveSize);
+            }
+            return 0;
+        }
+
         private void TogglePlay()
         {
             if (btnPlayPause.Content.ToString() == "4")
             {
-                if (SelectionEnd > SelectionStart)
-                    Play(new TimeRange(TimeFromPosition(SelectionStart), TimeFromPosition(SelectionEnd)));
+                if (PlayRangeEnd > PlayRangeStart)
+                {
+                    var start = WaveStream.CurrentTime;
+                    if (start < PlayRangeStart || start >= PlayRangeEnd)
+                        start = PlayRangeStart;
+                    Play(new TimeRange(start, PlayRangeEnd));
+                }
                 else
+                {
                     Play(WaveStream.CurrentTime);
+                }
             }
             else
                 Pause();
