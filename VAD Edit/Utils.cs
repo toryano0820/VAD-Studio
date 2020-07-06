@@ -333,6 +333,7 @@ namespace VADEdit.Types
         {
             New,
             Resize,
+            ExternalCall,
             Hide
         }
 
@@ -342,6 +343,8 @@ namespace VADEdit.Types
 
     public struct TimeRange
     {
+        public static TimeRange Zero { get; } = new TimeRange(TimeSpan.Zero, TimeSpan.Zero);
+
         public TimeSpan Start { get; set; }
         public TimeSpan End { get; set; }
 

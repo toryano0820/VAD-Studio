@@ -1,5 +1,6 @@
 ﻿using Newtonsoft.Json;
 using System;
+using System.ComponentModel;
 using System.IO;
 using System.Windows;
 
@@ -32,10 +33,15 @@ namespace VADEdit
         public static string LastMediaLocation { get; set; } = "c:\\";
         public static string KinpoSttInferHost { get; set; } = "http://203.177.163.136";
 
-        private static string configFilePath = Path.Combine(App.AppDir, "config.json");
+        private static string configFilePath;
 
         static Settings()
         {
+            if (LicenseManager.UsageMode == LicenseUsageMode.Designtime)
+                return;
+
+            configFilePath = Path.Combine(App.AppDir, "config.json");
+
             if (!File.Exists(configFilePath))
                 File.WriteAllText(configFilePath, "{}");
 

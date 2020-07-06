@@ -80,7 +80,7 @@ namespace VADEdit
 
                 if (value > @this.SelectionEnd)
                     @this.SelectionEnd = value;
-                
+
                 @this.PlayRangeStart = @this.TimeFromPosition(value);
 
                 @this.UpdateSelection();
@@ -800,6 +800,29 @@ namespace VADEdit
         private void BtnPlayPause_Click(object sender, RoutedEventArgs e)
         {
             TogglePlay();
+        }
+
+        public void ShowSelection(TimeRange range)
+        {
+            Pause();
+            SelectionStart = PositionFromTime(range.Start);
+            SelectionEnd = PositionFromTime(range.End);
+            WaveStream.Position = SelectionStart;
+            RenderPositionLine(true);
+            UpdateVisuals();
+
+            var mEvent = WaveSelectionChangedEventArgs.SelectionEvent.ExternalCall;
+            if (range == TimeRange.Zero)
+                mEvent = WaveSelectionChangedEventArgs.SelectionEvent.Hide;
+
+            SelectionChanged?.Invoke(this, new WaveSelectionChangedEventArgs()
+            {
+                Event = mEvent,
+                TimeRange = new TimeRange(
+                    TimeFromPosition(SelectionStart),
+                    TimeFromPosition(SelectionEnd)
+                )
+            });
         }
     }
 }

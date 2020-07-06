@@ -1,5 +1,4 @@
-﻿using System;
-using System.Collections.Generic;
+﻿using System.Collections.Generic;
 using System.Data.SQLite;
 using System.IO;
 using System.Text;
@@ -14,12 +13,12 @@ namespace VADEdit
         {
             var cmd = connection.CreateCommand();
             cmd.CommandText = "SELECT WavPath FROM project LIMIT 1;";
-            return (string)await cmd.ExecuteScalarAsync();
+            return Path.GetFullPath(Path.Combine(Path.GetFullPath(projectDirectory), (string)await cmd.ExecuteScalarAsync()));
         }
 
         public async Task SetWavPath(string value)
         {
-            var mPath = Utils.GetRelativePath(projectDirectory, value);
+            var mPath = Utils.GetRelativePath(Path.GetFullPath(projectDirectory), Path.GetFullPath(value));
             var cmd = connection.CreateCommand();
             cmd.CommandText = $"UPDATE project SET WavPath='{mPath}';";
             await cmd.ExecuteNonQueryAsync();
@@ -62,29 +61,20 @@ namespace VADEdit
         public async Task SetAudioChunkViews(List<AudioChunkView> value)
         {
             var cmd = connection.CreateCommand();
-            try
+            var cmdBuilder = new StringBuilder("BEGIN; DELETE FROM audioChunks;");
+            foreach (var cv in value)
             {
-                var cmdBuilder = new StringBuilder("BEGIN; DELETE FROM audioChunks;");
-                foreach (var cv in value)
-                {
-                    var timeRange = cv.TimeRange;
-                    var sttText = cv.SttText;
-                    var speechText = cv.SpeechText;
-                    var visualState = cv.VisualState;
-                    cmdBuilder.Append("INSERT INTO audioChunks (ChunkStart, ChunkEnd, SttText, SpeechText, VisualState) VALUES" +
-                        $"({timeRange.Start.TotalSeconds}, {timeRange.End.TotalSeconds}, '{sttText.Replace("'", "''")}', '{speechText.Replace("'", "''")}', {(short)visualState});");
-                }
-                cmdBuilder.Append("COMMIT;");
-                cmd.CommandText = cmdBuilder.ToString();
+                var timeRange = cv.TimeRange;
+                var sttText = cv.SttText;
+                var speechText = cv.SpeechText;
+                var visualState = cv.VisualState;
+                cmdBuilder.Append("INSERT INTO audioChunks (ChunkStart, ChunkEnd, SttText, SpeechText, VisualState) VALUES" +
+                    $"({timeRange.Start.TotalSeconds}, {timeRange.End.TotalSeconds}, '{sttText.Replace("'", "''")}', '{speechText.Replace("'", "''")}', {(short)visualState});");
+            }
+            cmdBuilder.Append("COMMIT;");
+            cmd.CommandText = cmdBuilder.ToString();
 
-                await cmd.ExecuteNonQueryAsync();
-            }
-            catch (Exception ex)
-            {
-                cmd.CommandText = "END;";
-                await cmd.ExecuteNonQueryAsync();
-                throw ex;
-            }
+            await cmd.ExecuteNonQueryAsync();
         }
 
         private SQLiteConnection connection;

@@ -128,29 +128,31 @@ namespace VADEdit
 
             waveView.SelectionChanged += (o, e) =>
             {
-                if (currentChunkView != null)
+                switch (e.Event)
                 {
-                    switch (e.Event)
-                    {
-                        case WaveSelectionChangedEventArgs.SelectionEvent.Resize:
+                    case WaveSelectionChangedEventArgs.SelectionEvent.Resize:
+                        if (currentChunkView != null)
+                        {
                             currentChunkView.TimeRange = e.TimeRange;
-                            currentChunkView.SttText = null;
+                            currentChunkView.SttText = "";
                             currentChunkView.VisualState = AudioChunkView.State.Idle;
                             Modified = true;
-                            break;
-                        case WaveSelectionChangedEventArgs.SelectionEvent.New:
-                            btnAddChunk.IsEnabled = true;
-                            foreach (var view in grdTime.Children.OfType<AudioChunkView>())
-                                view.Unselect();
-                            waveView.Focus();
-                            break;
-                        default:
-                            foreach (var view in grdTime.Children.OfType<AudioChunkView>())
-                                view.Unselect();
-                            waveView.Focus();
-                            break;
+                        }
+                        break;
+                    case WaveSelectionChangedEventArgs.SelectionEvent.New:
+                        foreach (var view in grdTime.Children.OfType<AudioChunkView>())
+                            view.Unselect();
+                        waveView.Focus();
+                        btnAddChunk.IsEnabled = true;
+                        break;
+                    case WaveSelectionChangedEventArgs.SelectionEvent.ExternalCall:
+                        break;
+                    default: // WaveSelectionChangedEventArgs.SelectionEvent.Hide
+                        foreach (var view in grdTime.Children.OfType<AudioChunkView>())
+                            view.Unselect();
+                        waveView.Focus();
+                        break;
 
-                    }
                 }
             };
 
@@ -220,6 +222,7 @@ namespace VADEdit
             if (success)
             {
                 SetTitle();
+                btnRevealFolder.Content = filePath;
                 waveStream = waveView.WaveStream;
             }
             else
@@ -227,6 +230,7 @@ namespace VADEdit
                 projectLocation = null;
                 sourceLocation = null;
                 SetTitle();
+                btnRevealFolder.Content = null;
 
                 btnSplit.IsEnabled = false;
             }
@@ -338,7 +342,7 @@ namespace VADEdit
             grdTime.Children.Clear();
             currentChunkView = null;
             playingChunkView = null;
-            ShowSelection(new TimeRange(TimeSpan.Zero, TimeSpan.Zero));
+            ShowSelection(TimeRange.Zero);
 
             txtWait.Text = "VAD processing... Please wait...";
             grdWait.Visibility = Visibility.Visible;
@@ -488,22 +492,30 @@ namespace VADEdit
             grdWait.Visibility = Visibility.Hidden;
         }
 
-        private async Task<string> GetNextFileName()
+        private async Task<string[]> GetNextFileNames(int count = 1)
         {
             await Task.Yield();
-            var fileNames = Directory.EnumerateFiles(projectLocation, "*.wav").Select(s => s.Replace(@"\", "/").Split('/').Last());
+            var chunklocation = Path.Combine(projectLocation, "EXPORT");
+            var fileNames = Directory.EnumerateFiles(chunklocation, "*.wav").Select(s => s.Replace(@"\", "/").Split('/').Last());
             int i = 0;
-            while (true)
+            var availableFileNames = new List<string>();
+            for (int j = 0; j < count; j++)
             {
-                var fileName = $"trimmed_{i++:D4}.wav";
-                if (!fileNames.Contains(fileName))
+                while (true)
                 {
-                    return Path.Combine(projectLocation, fileName);
+                    var fileName = $"trimmed_{i++:D4}.wav";
+                    if (!fileNames.Contains(fileName))
+                    {
+                        availableFileNames.Add(Path.Combine(chunklocation, fileName));
+                        break;
+                    }
                 }
             }
+
+            return availableFileNames.ToArray();
         }
 
-        private async Task DoStt(AudioChunkView chunkView, bool suppressErrorDialogs = false)
+        private async Task DoStt(AudioChunkView chunkView, bool batchMode = false)
         {
             Dispatcher.Invoke(() =>
             {
@@ -522,7 +534,7 @@ namespace VADEdit
                 {
                     chunkView.VisualState = AudioChunkView.State.Error;
                     Logger.Log($"Processing STT on audio longer than {maxSeconds} seconds:\n    {sourceLocation}: {chunkView.TimeRange}", Logger.Type.Warn);
-                    if (!suppressErrorDialogs)
+                    if (!batchMode)
                     {
                         MessageBox.Show($"Will not process audio longer than {maxSeconds} seconds.", "STT Warning", MessageBoxButton.OK, MessageBoxImage.Warning);
                     }
@@ -636,7 +648,7 @@ namespace VADEdit
                 Logger.Log($"{ex.Message}:\n{ex.StackTrace}", Logger.Type.Error);
                 Dispatcher.Invoke(() =>
                 {
-                    if (!suppressErrorDialogs)
+                    if (!batchMode)
                     {
                         MessageBox.Show(ex.Message, "STT Error", MessageBoxButton.OK, MessageBoxImage.Error);
                     }
@@ -644,98 +656,117 @@ namespace VADEdit
             }
         }
 
-        private async Task DoExport(AudioChunkView chunkView, bool suppressErrorDialogs = false)
+        private async Task DoExport(AudioChunkView[] chunkViews)
+        {
+            var chunkLocation = Path.Combine(projectLocation, "EXPORT");
+            if (!Directory.Exists(chunkLocation))
+                Directory.CreateDirectory(chunkLocation);
+
+            var chunksCount = chunkViews.Count();
+
+            var savePaths = await GetNextFileNames(chunksCount);
+
+            for (int i = 0; i < chunksCount; i++)
+            {
+                var chunkView = chunkViews[i];
+                if (cancelFlag)
+                    break;
+
+                await DoExport(chunkView, savePaths[i], true);
+            }
+        }
+
+
+        private async Task DoExport(AudioChunkView chunkView, string savePath = null, bool batchMode = false)
         {
             chunkView.BringIntoView();
             if (string.IsNullOrWhiteSpace(chunkView.SpeechText))
             {
                 chunkView.VisualState = AudioChunkView.State.Error;
+                if (!batchMode)
+                    MessageBox.Show("Text is empty!", "Data Warning", MessageBoxButton.OK, MessageBoxImage.Warning);
                 return;
             }
 
-            var chunkLocation = projectLocation;
+            var chunkLocation = Path.Combine(projectLocation, "EXPORT");
+            if (!batchMode && !Directory.Exists(chunkLocation))
+                Directory.CreateDirectory(chunkLocation);
+
+            if (string.IsNullOrWhiteSpace(savePath))
+                savePath = (await GetNextFileNames(1)).First();
+
             var speechText = chunkView.SpeechText;
             var gSttText = chunkView.SttText;
 
-            if (!string.IsNullOrWhiteSpace(speechText))
+            waveView.Pause();
+
+            if (File.Exists(savePath))
             {
-                waveView.Pause();
-                var savePath = await GetNextFileName();
+                File.Delete(savePath);
+            }
 
-                if (File.Exists(savePath))
+            var oldPos = waveStream.Position;
+            var chunkStart = chunkView.TimeRange.Start.TotalSeconds;
+            var chunkEnd = chunkView.TimeRange.End.TotalSeconds;
+
+            await Task.Run(async () =>
+            {
+                using (var writer = new WaveFileWriter(savePath, waveStream.WaveFormat))
                 {
-                    File.Delete(savePath);
-                }
+                    var start = waveView.PositionFromTime(TimeSpan.FromSeconds(chunkStart)); //(long)((chunkStart / waveStream.TotalTime.TotalSeconds) * waveStream.Length);
+                    var end = waveView.PositionFromTime(TimeSpan.FromSeconds(chunkEnd)); //(long)((chunkEnd / waveStream.TotalTime.TotalSeconds) * waveStream.Length);
 
-                var oldPos = waveStream.Position;
-                var chunkStart = chunkView.TimeRange.Start.TotalSeconds;
-                var chunkEnd = chunkView.TimeRange.End.TotalSeconds;
+                    Func<double> alignStart = () => start / (double)waveStream.WaveFormat.BlockAlign;
+                    Func<double> alignEnd = () => end / (double)waveStream.WaveFormat.BlockAlign;
 
-                await Task.Run(async () =>
-                {
-                    using (var writer = new WaveFileWriter(savePath, waveStream.WaveFormat))
+                    while (alignStart() != (int)alignStart())
                     {
-                        var start = waveView.PositionFromTime(TimeSpan.FromSeconds(chunkStart)); //(long)((chunkStart / waveStream.TotalTime.TotalSeconds) * waveStream.Length);
-                        var end = waveView.PositionFromTime(TimeSpan.FromSeconds(chunkEnd)); //(long)((chunkEnd / waveStream.TotalTime.TotalSeconds) * waveStream.Length);
+                        start += 1;
+                    }
 
-                        Func<double> alignStart = () => start / (double)waveStream.WaveFormat.BlockAlign;
-                        Func<double> alignEnd = () => end / (double)waveStream.WaveFormat.BlockAlign;
+                    while (alignEnd() != (int)alignEnd())
+                    {
+                        end += 1;
+                    }
 
-                        while (alignStart() != (int)alignStart())
+                    waveStream.Position = start;
+                    byte[] buffer = new byte[1024];
+                    while (waveStream.Position < end)
+                    {
+                        int bytesRequired = (int)(end - waveStream.Position);
+                        if (bytesRequired > 0)
                         {
-                            start += 1;
-                        }
-
-                        while (alignEnd() != (int)alignEnd())
-                        {
-                            end += 1;
-                        }
-
-                        waveStream.Position = start;
-                        byte[] buffer = new byte[1024];
-                        while (waveStream.Position < end)
-                        {
-                            int bytesRequired = (int)(end - waveStream.Position);
-                            if (bytesRequired > 0)
+                            int bytesToRead = Math.Min(bytesRequired, buffer.Length);
+                            int bytesRead = waveStream.Read(buffer, 0, bytesToRead);
+                            if (bytesRead > 0)
                             {
-                                int bytesToRead = Math.Min(bytesRequired, buffer.Length);
-                                int bytesRead = waveStream.Read(buffer, 0, bytesToRead);
-                                if (bytesRead > 0)
-                                {
-                                    await writer.WriteAsync(buffer, 0, bytesRead);
-                                }
+                                await writer.WriteAsync(buffer, 0, bytesRead);
                             }
                         }
                     }
-                    waveStream.Position = oldPos;
+                }
+                waveStream.Position = oldPos;
 
-                    var line = $"{savePath.Replace(@"\", "/").Split('/').Last()},";
+                var line = $"{savePath.Replace(@"\", "/").Split('/').Last()},";
 
-                    if (Settings.IncludeAudioFileSize)
-                        line += $"{new FileInfo(savePath).Length},";
+                if (Settings.IncludeAudioFileSize)
+                    line += $"{new FileInfo(savePath).Length},";
 
-                    if (Settings.IncludeAudioLengthMillis)
-                        line += $"{(long)TimeSpan.FromSeconds(chunkEnd - chunkStart).TotalMilliseconds},";
+                if (Settings.IncludeAudioLengthMillis)
+                    line += $"{(long)TimeSpan.FromSeconds(chunkEnd - chunkStart).TotalMilliseconds},";
 
-                    if (Settings.IncludeSttResult)
-                        line += $"\"{gSttText}\",";
+                if (Settings.IncludeSttResult)
+                    line += $"\"{gSttText}\",";
 
-                    line += $"\"{speechText}\"\n";
+                line += $"\"{speechText}\"\n";
 
-                    File.AppendAllText(System.IO.Path.Combine(chunkLocation, "sentence_map.csv"), line);
+                File.AppendAllText(System.IO.Path.Combine(chunkLocation, "sentence_map.csv"), line);
 
-                });
+            });
 
-                chunkView.VisualState = AudioChunkView.State.ExportSuccess;
-                if (!suppressErrorDialogs)
-                    MessageBox.Show($"Done!\n{savePath}", "Export Info", MessageBoxButton.OK, MessageBoxImage.Information);
-            }
-            else
-            {
-                chunkView.VisualState = AudioChunkView.State.Error;
-                if (!suppressErrorDialogs)
-                    MessageBox.Show("Text is empty!", "Data Warning", MessageBoxButton.OK, MessageBoxImage.Warning);
-            }
+            chunkView.VisualState = AudioChunkView.State.ExportSuccess;
+            if (!batchMode)
+                MessageBox.Show($"Done!\n{savePath}", "Export Info", MessageBoxButton.OK, MessageBoxImage.Information);
         }
 
         private async Task AddChunkView(TimeRange timeRange, string gSttText = "", string speechText = "", int insertIndex = -1, bool focus = false)
@@ -813,7 +844,7 @@ namespace VADEdit
 
             chunkView.DeleteButtonClicked += delegate
             {
-                ShowSelection(new TimeRange(TimeSpan.Zero, TimeSpan.Zero));
+                ShowSelection(TimeRange.Zero);
                 var index = grdTime.Children.IndexOf(chunkView);
                 grdTime.Children.Remove(chunkView);
                 var views = grdTime.Children.OfType<AudioChunkView>();
@@ -872,13 +903,7 @@ namespace VADEdit
                 return;
 
             currentSelection = range;
-
-            waveView.Pause();
-            waveView.SelectionStart = waveView.PositionFromTime(range.Start);
-            waveView.SelectionEnd = waveView.PositionFromTime(range.End);
-            waveStream.Position = waveView.SelectionStart;
-            waveView.RenderPositionLine(true);
-            waveView.UpdateVisuals();
+            waveView.ShowSelection(range);
         }
 
         private async void Split_Click(object sender, RoutedEventArgs e)
@@ -900,7 +925,7 @@ namespace VADEdit
             {
                 cancelFlag = false;
 
-                ShowSelection(new TimeRange(TimeSpan.Zero, TimeSpan.Zero));
+                ShowSelection(TimeRange.Zero);
                 waveView.Pause();
 
                 txtWait.Text = "STT processing... Please wait...";
@@ -933,20 +958,13 @@ namespace VADEdit
             {
                 cancelFlag = false;
 
-                ShowSelection(new TimeRange(TimeSpan.Zero, TimeSpan.Zero));
+                ShowSelection(TimeRange.Zero);
                 txtWait.Text = "Exporting... Please wait...";
                 grdWait.Visibility = Visibility.Visible;
                 btnCancel.Visibility = Visibility.Visible;
                 grdMain.IsEnabled = false;
 
-
-                foreach (var chunkView in chunkViews)
-                {
-                    if (cancelFlag)
-                        break;
-
-                    await DoExport(chunkView, true);
-                }
+                await DoExport(chunkViews);
 
                 grdMain.IsEnabled = true;
                 grdWait.Visibility = Visibility.Hidden;
@@ -1051,6 +1069,7 @@ namespace VADEdit
                     Modified = false;
                 }
                 projectLocation = Path.Combine(pi.Value.ProjectBaseLocation, pi.Value.ProjectName);
+
                 projectFileLocation = Path.Combine(projectLocation, pi.Value.ProjectName + ".vadedit");
                 sourceLocation = pi.Value.MediaLocation;
                 Directory.CreateDirectory(projectLocation);
@@ -1096,7 +1115,8 @@ namespace VADEdit
             {
                 projectLocation = Path.GetDirectoryName(dlg.FileName);
                 projectConfig = new ProjectConfig(dlg.FileName);
-                wavLocation = Path.Combine(projectLocation, await projectConfig.GetWavPath());
+                projectFileLocation = Path.Combine(projectLocation, projectConfig.GetProjectName() + ".vadedit");
+                wavLocation = await projectConfig.GetWavPath();
                 if (!string.IsNullOrWhiteSpace(wavLocation))
                 {
                     await LoadStream(wavLocation, async () =>
@@ -1209,6 +1229,11 @@ namespace VADEdit
             }
 
             Modified = true;
+        }
+
+        private void Exit_Click(object sender, RoutedEventArgs e)
+        {
+            Close();
         }
     }
 

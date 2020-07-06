@@ -1,5 +1,4 @@
 ﻿using System;
-using System.Threading.Tasks;
 using System.Windows;
 using System.Windows.Controls;
 using System.Windows.Input;
@@ -195,16 +194,13 @@ namespace VADEdit
 
         private void txtSpeech_TextChanged(object sender, TextChangedEventArgs e)
         {
-            if (string.IsNullOrEmpty(txtSpeech.Text))
-                txtSpeech.ToolTip = null;
+            txtSpeech.ToolTip = string.IsNullOrWhiteSpace(txtSpeech.Text) ? null : txtSpeech.Text;
 
             if (grdSelect.IsVisible)
             {
-                txtSpeech.ToolTip = txtSpeech.Text;
                 VisualState = State.Idle;
                 TextChanged?.Invoke(this, EventArgs.Empty);
             }
-            // IsFocused
         }
 
         protected override void OnPreviewMouseLeftButtonDown(MouseButtonEventArgs e)

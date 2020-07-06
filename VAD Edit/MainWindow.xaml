@@ -5,8 +5,11 @@
         xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
         xmlns:local="clr-namespace:VADEdit"
         mc:Ignorable="d"
-        Title="VAD Edit" MinHeight="600" MinWidth="200" Height="520" Width="695"
+        Title="VAD Edit" MinHeight="600" MinWidth="200" Height="587" Width="797"
         WindowStartupLocation="CenterScreen" WindowState="Maximized" Background="#2D2D30">
+    <Window.Resources>
+        <SolidColorBrush x:Key="borderBrush" Color="{x:Static SystemColors.ActiveBorderColor}"></SolidColorBrush>
+    </Window.Resources>
     <Window.CommandBindings>
         <CommandBinding Command="New" Executed="NewProject_Click" />
         <CommandBinding Command="Open" Executed="OpenProject_Click" />
@@ -28,22 +31,22 @@
                 <MenuItem Header="Open Project ..." Command="Open"/>
                 <MenuItem Header="Save Project" Name="btnSaveProject" IsEnabled="False" Command="Save"/>
                 <Separator />
-                <MenuItem Header="Reveal in Explorer" Name="btnRevealFolder" IsEnabled="False" Click="RevealFolder_Click"/>
+                <MenuItem Header="Reveal in Explorer" Name="menuRevealFolder" IsEnabled="{Binding IsEnabled, ElementName=btnRevealFolder}" Click="RevealFolder_Click"/>
                 <Separator />
-                <MenuItem Header="Exit"/>
+                <MenuItem Header="Exit" Click="Exit_Click"/>
             </MenuItem>
             <MenuItem Header="Project">
                 <MenuItem Header="Convert &amp; Load ..." Name="btnConverLoad" IsEnabled="False" Click="ConvertLoad_Click"/>
                 <Separator />
-                <MenuItem Header="Split" Name="btnSplit" IsEnabled="False" Click="Split_Click"/>
+                <MenuItem Header="Split" Name="menuSplit" IsEnabled="{Binding IsEnabled, ElementName=btnSplit}" Click="Split_Click"/>
                 <Separator />
-                <MenuItem Header="Add Chunk" Name="btnAddChunk" IsEnabled="False" Click="AddChunk_Click"/>
+                <MenuItem Header="Add Chunk" Name="menuAddChunk" IsEnabled="{Binding IsEnabled, ElementName=btnAddChunk}" Click="AddChunk_Click"/>
                 <MenuItem Header="Remove All Chunks" Name="btnRemoveChunks" IsEnabled="False" Click="RemoveChunks_Click"/>
                 <MenuItem Header="Clear All" Name="btnClearChunks" IsEnabled="False" Click="ClearChunks_Click" ToolTip="Clear all STT and Speech texts"/>
                 <MenuItem Header="Reset Export State" Name="btnResetChunks" IsEnabled="False" Click="ResetChunks_Click" ToolTip="Make all chunks available for exporting"/>
                 <Separator />
-                <MenuItem Header="Batch STT" Name="btnSttAll" IsEnabled="False" Click="SttAll_Click"/>
-                <MenuItem Header="Batch Export" Name="btnExportAll" IsEnabled="False" Click="ExportAll_Click"/>
+                <MenuItem Header="Batch STT" Name="menuSttAll" IsEnabled="{Binding IsEnabled, ElementName=btnSttAll}" Click="SttAll_Click"/>
+                <MenuItem Header="Batch Export" Name="menuExportAll" IsEnabled="{Binding IsEnabled, ElementName=btnExportAll}" Click="ExportAll_Click"/>
                 <!--<Separator />
                 <MenuItem Header="Find ..." IsEnabled="False" />-->
             </MenuItem>
@@ -52,22 +55,41 @@
         <Grid Name="grdMain" Grid.Row="1">
             <Grid.RowDefinitions>
                 <RowDefinition Height="180"/>
+                <RowDefinition Height="35" />
                 <RowDefinition />
                 <RowDefinition Height="30" />
             </Grid.RowDefinitions>
-            <Border BorderThickness="1" BorderBrush="Gray" Margin="10,10,10,0" Height="167" VerticalAlignment="Top">
+            <Border BorderThickness="1" BorderBrush="{StaticResource borderBrush}" Margin="10">
                 <local:WaveFormViewer x:Name="waveView" ClipToBounds="True"/>
             </Border>
-            <Border BorderThickness="1" BorderBrush="Gray" Grid.Row="1" Margin="10">
+            <Grid Grid.Row="1" Margin="20,0">
+                <Grid.ColumnDefinitions>
+                    <ColumnDefinition Width="100" />
+                    <ColumnDefinition Width="5" />
+                    <ColumnDefinition Width="100" />
+                    <ColumnDefinition Width="5" />
+                    <ColumnDefinition />
+                    <ColumnDefinition Width="5" />
+                    <ColumnDefinition Width="100" />
+                    <ColumnDefinition Width="5" />
+                    <ColumnDefinition Width="100" />
+                </Grid.ColumnDefinitions>
+                <local:ImageButton x:Name="btnSplit" Grid.Column="0" Content="Split" Click="Split_Click" Background="Transparent" PressedBackground="#55000000" MouseOverBackground="#22000000" BorderBrush="{StaticResource borderBrush}" BorderThickness="1" CornerRadius="5" ContentMargin="0" FontWeight="Normal" IsEnabled="False" Focusable="False"/>
+                <local:ImageButton x:Name="btnAddChunk" Grid.Column="2" Content="Add Chunk" Click="AddChunk_Click" Background="Transparent" PressedBackground="#55000000" MouseOverBackground="#22000000" BorderBrush="{StaticResource borderBrush}" BorderThickness="1" CornerRadius="5" ContentMargin="0" FontWeight="Normal" IsEnabled="False" Focusable="False"/>
+                <local:ImageButton x:Name="btnRevealFolder" Grid.Column="4" Click="RevealFolder_Click" Background="Transparent" PressedBackground="#55000000" MouseOverBackground="#22000000" BorderBrush="{StaticResource borderBrush}" CornerRadius="5" ContentMargin="0" FontWeight="Normal" IsEnabled="False" Focusable="False"/>
+                <local:ImageButton x:Name="btnSttAll" Grid.Column="6" Content="Batch STT" Click="SttAll_Click" Background="Transparent" PressedBackground="#55000000" MouseOverBackground="#22000000" BorderBrush="{StaticResource borderBrush}" BorderThickness="1" CornerRadius="5" ContentMargin="0" FontWeight="Normal" IsEnabled="False" Focusable="False"/>
+                <local:ImageButton x:Name="btnExportAll" Grid.Column="8" Content="Batch Export" Click="ExportAll_Click" Background="Transparent" PressedBackground="#55000000" MouseOverBackground="#22000000" BorderBrush="{StaticResource borderBrush}" BorderThickness="1" CornerRadius="5" ContentMargin="0" FontWeight="Normal" IsEnabled="False" Focusable="False"/>
+            </Grid>
+            <Border BorderThickness="1" BorderBrush="{StaticResource borderBrush}" Grid.Row="2" Margin="10">
                 <ScrollViewer Name="chunkScroller" HorizontalScrollBarVisibility="Disabled" VerticalScrollBarVisibility="Auto" Focusable="False">
                     <StackPanel Name="grdTime" />
                 </ScrollViewer>
             </Border>
-            <StatusBar Background="DodgerBlue" Name="statusBar" Height="30" VerticalAlignment="Bottom" Grid.Row="2">
+            <StatusBar Background="DodgerBlue" Name="statusBar" Height="30" VerticalAlignment="Bottom" Grid.Row="3">
                 <TextBlock Name="txtCount" Text="Count: 0" Margin="10,0"/>
             </StatusBar>
         </Grid>
-        <Grid Name="grdWait" Background="#DD000000" Visibility="Hidden" Grid.RowSpan="3">
+        <Grid Name="grdWait" Background="#DD000000" Visibility="Hidden" Grid.RowSpan="2">
             <Grid  VerticalAlignment="Center" HorizontalAlignment="Center">
                 <Grid.RowDefinitions>
                     <RowDefinition />
