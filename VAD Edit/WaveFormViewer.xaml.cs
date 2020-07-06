@@ -309,7 +309,7 @@ namespace VADEdit
             var watch = new System.Diagnostics.Stopwatch();
             while (Player.PlaybackState == PlaybackState.Playing)
             {
-                if (WaveStream.CurrentTime >= PlayRangeEnd)
+                if (WaveStream.CurrentTime >= PlayRangeEnd && !(adjustingStart || adjustingEnd))
                 {
                     Pause();
                     btnPlayPause.Content = "4";
@@ -464,7 +464,7 @@ namespace VADEdit
             {
                 grdSelect.Margin = new Thickness(selectionStart, 0, 0, 0);
                 grdSelect.Width = selectionEnd - selectionStart;
-                if (!fromRender)
+                if (!fromRender && !(adjustingStart || adjustingEnd))
                     Pause();
             }
             else
