@@ -6,9 +6,9 @@ using System.Linq;
 using System.Threading.Tasks;
 using System.Windows;
 using System.Runtime;
-using static VADEdit.Utils;
+using static VAD.Utils;
 
-namespace VADEdit
+namespace VAD
 {
     /// <summary>
     /// Interaction logic for App.xaml

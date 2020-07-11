@@ -1,8 +1,4 @@
-﻿#if GOOGLE_STT
-using Google.Cloud.Speech.V1;
-#else
-using System.Net.Http;
-#endif
+﻿using System.Net.Http;
 using NAudio.Wave;
 using Newtonsoft.Json;
 using System;
@@ -14,12 +10,12 @@ using System.Text.RegularExpressions;
 using System.Threading.Tasks;
 using System.Windows;
 using System.Windows.Media;
-using static VADEdit.Utils;
+using static VAD.Utils;
 using System.Collections.Generic;
 using System.Configuration;
-using VADEdit.Types;
+using VAD.Types;
 
-namespace VADEdit
+namespace VAD
 {
     /// <summary>
     /// Interaction logic for MainWindow.xaml
@@ -28,18 +24,7 @@ namespace VADEdit
     {
         private AudioChunkView currentChunkView = null;
         private AudioChunkView playingChunkView = null;
-#if GOOGLE_STT
-        private SpeechClient speechClient = null;
-#else
         private HttpClient httpClient = null;
-        private Dictionary<string, string> trtisLanguages = new Dictionary<string, string>()
-        {
-            {"en-US", "en"},
-            {"fil-PH", "tl"},
-            {"th-TH", "th"},
-            {"zh-TW", "tw"},
-        };
-#endif
         private WaveStream waveStream = null;
         private TimeRange currentSelection = new TimeRange();
         private string projectLocation = null;
@@ -173,26 +158,12 @@ namespace VADEdit
             };
         }
 
-        internal void RenewSpeechClient()
-        {
-#if GOOGLE_STT
-            speechClient = SpeechClient.Create();
-#else
-            httpClient = new HttpClient();
-#endif
-            GC.Collect();
-        }
-
         private void SetTitle()
         {
             var version = System.Reflection.Assembly.GetExecutingAssembly().GetName().Version;
-            var versionString = $"{version.Major}.{version.Minor}.{version.Build}";
-#if GOOGLE_STT
-            versionString += "_Google-STT";
-#else
-            versionString += "_NERA-STT";
-#endif
-            Title = $"VAD Edit v{versionString} [{Settings.LanguageCode}]{(string.IsNullOrWhiteSpace(projectLocation) ? "" : $" [{projectLocation}]")}";
+            var versionString = $"{version.Major}.{version.Minor}.{version.Build}.{version.Revision}";
+
+            Title = $"{GetType().Assembly.GetName().Name} v{versionString} [{Settings.SttLanguage}]{(string.IsNullOrWhiteSpace(projectLocation) ? "" : $" [{projectLocation}]")}";
         }
 
         private async Task LoadStream(string filePath, Func<Task> beforeHideWaitPanel = null)
@@ -222,7 +193,7 @@ namespace VADEdit
             if (success)
             {
                 SetTitle();
-                btnRevealFolder.Content = filePath;
+                btnRevealFolder.Content = Path.GetFileName(filePath);
                 waveStream = waveView.WaveStream;
             }
             else
@@ -526,7 +497,7 @@ namespace VADEdit
 
             var startSecond = Dispatcher.Invoke(() => chunkView.TimeRange.Start.TotalSeconds);
             var endSecond = Dispatcher.Invoke(() => chunkView.TimeRange.End.TotalSeconds);
-            var maxSeconds = int.Parse(ConfigurationManager.AppSettings.Get("MaxSeconds"));
+            var maxSeconds = SttClient.MaxDurationInSeconds;
 
             if (endSecond - startSecond > maxSeconds)
             {
@@ -585,57 +556,16 @@ namespace VADEdit
                     waveStream.Position = oldPos;
                     streamBuffer.Position = 0;
 
-#if GOOGLE_STT
-                    var response = speechClient.Recognize(
-                        new RecognitionConfig()
-                        {
-                            Encoding = RecognitionConfig.Types.AudioEncoding.Linear16,
-                            SampleRateHertz = 16000,
-                            LanguageCode = Settings.LanguageCode,
-                        }, new RecognitionAudio()
-                        {
-                            Content = Google.Protobuf.ByteString.CopyFrom(streamBuffer.ToArray())
-                        }
-                    );
-#else
-                    var httpPayload = new MultipartFormDataContent();
-                    httpPayload.Add(new StreamContent(streamBuffer), "raw", "in.wav");
-                    var httpRsp = await httpClient.PostAsync($"{Settings.KinpoSttInferHost}/api/sttinfer/{trtisLanguages[Settings.LanguageCode]}", httpPayload);
-                    var response = new
-                    {
-                        Results = new[] {
-                            new {
-                                Alternatives = new[] {
-                                    new {
-                                        Transcript =  (string)(JsonConvert.DeserializeObject(await httpRsp.Content.ReadAsStringAsync()) as dynamic).prediction
-                                    }
-                                }
-                            }
-                        }
-                    };
+                    var sttResult = await SttClient.Infer(streamBuffer);
 
-#endif
-
-                    foreach (var result in response.Results)
+                    if (!string.IsNullOrWhiteSpace(sttResult))
                     {
-                        foreach (var alternative in result.Alternatives)
-                        {
-                            Dispatcher.Invoke(() =>
-                            {
-                                if (!string.IsNullOrWhiteSpace(alternative.Transcript))
-                                {
-                                    chunkView.SttText = alternative.Transcript.ToLower();
-                                    chunkView.SpeechText = alternative.Transcript.ToLower();
-                                    chunkView.VisualState = AudioChunkView.State.STTSuccess;
-                                }
-                                else
-                                    chunkView.VisualState = AudioChunkView.State.Error;
-                            });
-                            return;
-                        }
+                        chunkView.SttText = sttResult;
+                        chunkView.SpeechText = sttResult;
+                        chunkView.VisualState = AudioChunkView.State.STTSuccess;
                     }
-
-                    throw new Exception("unrecognizable stream");
+                    else
+                        chunkView.VisualState = AudioChunkView.State.Error;
                 }
             }
             catch (TaskCanceledException) { }

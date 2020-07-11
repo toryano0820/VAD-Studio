@@ -15,7 +15,7 @@ using System.Windows.Interop;
 using System.Windows.Media;
 using System.Windows.Media.Effects;
 
-namespace VADEdit
+namespace VAD
 {
     public static class Utils
     {
@@ -325,7 +325,7 @@ namespace VADEdit
 }
 
 #region Types
-namespace VADEdit.Types
+namespace VAD.Types
 {
     public struct WaveSelectionChangedEventArgs
     {
@@ -387,7 +387,7 @@ namespace VADEdit.Types
 #endregion
 
 #region IValueConverters
-namespace VADEdit.Converters
+namespace VAD.Converters
 {
     public class MinusValueConverter : IMultiValueConverter
     {
@@ -562,6 +562,32 @@ namespace VADEdit.Converters
         }
 
         public object[] ConvertBack(object value, Type[] targetTypes, object parameter, CultureInfo culture)
+        {
+            throw new NotImplementedException();
+        }
+    }
+
+    public class FalseToCollapsed : IValueConverter
+    {
+        public object Convert(object value, Type targetType, object parameter, CultureInfo culture)
+        {
+            return (bool)value ? Visibility.Visible : Visibility.Collapsed;
+        }
+
+        public object ConvertBack(object value, Type targetType, object parameter, CultureInfo culture)
+        {
+            throw new NotImplementedException();
+        }
+    }
+
+    public class TrueToCollapsed : IValueConverter
+    {
+        public object Convert(object value, Type targetType, object parameter, CultureInfo culture)
+        {
+            return !(bool)value ? Visibility.Visible : Visibility.Collapsed;
+        }
+
+        public object ConvertBack(object value, Type targetType, object parameter, CultureInfo culture)
         {
             throw new NotImplementedException();
         }

@@ -1,9 +1,9 @@
-﻿<Window x:Class="VADEdit.MainWindow"
+﻿<Window x:Class="VAD.MainWindow"
         xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
         xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
         xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
         xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
-        xmlns:local="clr-namespace:VADEdit"
+        xmlns:local="clr-namespace:VAD"
         mc:Ignorable="d"
         Title="VAD Edit" MinHeight="600" MinWidth="200" Height="587" Width="797"
         WindowStartupLocation="CenterScreen" WindowState="Maximized" Background="#2D2D30">

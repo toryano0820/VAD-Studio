@@ -3,9 +3,9 @@ using System.Windows;
 using System.Windows.Controls;
 using System.Windows.Input;
 using System.Windows.Media;
-using VADEdit.Types;
+using VAD.Types;
 
-namespace VADEdit
+namespace VAD
 {
     /// <summary>
     /// Interaction logic for AudioChunkView.xaml

@@ -7,7 +7,7 @@ using System.Windows;
 using System.Windows.Controls;
 using System.Windows.Media;
 
-namespace VADEdit
+namespace VAD
 {
     /// <summary>
     /// Interaction logic for NewProjectWindow.xaml

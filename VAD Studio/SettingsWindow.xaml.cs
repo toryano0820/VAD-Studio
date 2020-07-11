@@ -8,7 +8,7 @@ using System.Windows.Data;
 using System.Windows.Media;
 using Xceed.Wpf.Toolkit;
 
-namespace VADEdit
+namespace VAD
 {
     /// <summary>
     /// Interaction logic for SettingsWindow.xaml
@@ -30,19 +30,13 @@ namespace VADEdit
 
             Owner = App.Current.MainWindow;
 
-#if !GOOGLE_STT
-            lblGoogleCredential.Visibility = Visibility.Collapsed;
-            grdGoogleCredential.Visibility = Visibility.Collapsed;
-#endif
-
             chkSplitOnSilence.IsChecked = Settings.SplitOnSilence;
             txtSplitLength.Text = Settings.SplitLength.ToString();
             txtMaxSilence.Text = Settings.MaxSilence.ToString();
             txtMinLength.Text = Settings.MinLength.ToString();
             txtBatchSize.Text = Settings.BatchSize.ToString();
             txtMinVolume.Text = Settings.MinVolume.ToString();
-            cmbLanguage.Text = Settings.LanguageCode;
-            txtSttCredentialPath.Text = Settings.STTCredentialtPath;
+            cmbSttLanguage.Text = Settings.SttLanguage;
             chkIncludeSttResult.IsChecked = Settings.IncludeSttResult;
             chkIncludeAudioFileSize.IsChecked = Settings.IncludeAudioFileSize;
             chkIncludeAudioLengthMillis.IsChecked = Settings.IncludeAudioLengthMillis;
@@ -132,8 +126,7 @@ namespace VADEdit
             Settings.MinLength = int.Parse(win.txtMinLength.Text);
             Settings.MinVolume = float.Parse(win.txtMinVolume.Text);
             Settings.BatchSize = int.Parse(win.txtBatchSize.Text);
-            Settings.LanguageCode = win.cmbLanguage.Text;
-            Settings.STTCredentialtPath = win.txtSttCredentialPath.Text;
+            Settings.SttLanguage = win.cmbSttLanguage.Text;
             Settings.IncludeSttResult = win.chkIncludeSttResult.IsChecked.Value;
             Settings.IncludeAudioFileSize = win.chkIncludeAudioFileSize.IsChecked.Value;
             Settings.IncludeAudioLengthMillis = win.chkIncludeAudioLengthMillis.IsChecked.Value;
@@ -180,22 +173,6 @@ namespace VADEdit
             Close();
         }
 
-        private void btnSttCredentialPath_Click(object sender, RoutedEventArgs e)
-        {
-            var dlg = new System.Windows.Forms.OpenFileDialog()
-            {
-                Filter = "JSON Files|*.json",
-                InitialDirectory = App.AppDir
-            };
-            var res = dlg.ShowDialog();
-            if (res == System.Windows.Forms.DialogResult.OK)
-            {
-                var fileDir = Utils.GetRelativePath(App.AppDir, dlg.FileName);
-                txtSttCredentialPath.Text = fileDir;
-            }
-            dlg.Dispose();
-        }
-
         private void btnProjectBaseLocation_Click(object sender, RoutedEventArgs e)
         {
             var dlg = new CommonOpenFileDialog()
@@ -218,32 +195,6 @@ namespace VADEdit
                 txtProjectBaseLocation.Text = dlg.FileName;
             }
             dlg.Dispose();
-        }
-    }
-
-    internal class FalseToCollapsed : IValueConverter
-    {
-        public object Convert(object value, Type targetType, object parameter, CultureInfo culture)
-        {
-            return (bool)value ? Visibility.Visible : Visibility.Collapsed;
-        }
-
-        public object ConvertBack(object value, Type targetType, object parameter, CultureInfo culture)
-        {
-            throw new NotImplementedException();
-        }
-    }
-
-    internal class TrueToCollapsed : IValueConverter
-    {
-        public object Convert(object value, Type targetType, object parameter, CultureInfo culture)
-        {
-            return !(bool)value ? Visibility.Visible : Visibility.Collapsed;
-        }
-
-        public object ConvertBack(object value, Type targetType, object parameter, CultureInfo culture)
-        {
-            throw new NotImplementedException();
         }
     }
 }

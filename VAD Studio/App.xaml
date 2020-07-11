@@ -1,7 +1,7 @@
 ﻿<Application x:Class="VADEdit.App"
              xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
              xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
-             xmlns:local="clr-namespace:VADEdit"
+             xmlns:local="clr-namespace:VAD"
              StartupUri="MainWindow.xaml">
     <Application.Resources>
         <Style x:Key="GroupBoxNoHeaderStyle" TargetType="{x:Type GroupBox}">

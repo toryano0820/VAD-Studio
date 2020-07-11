@@ -3,9 +3,9 @@ using System.Data.SQLite;
 using System.IO;
 using System.Text;
 using System.Threading.Tasks;
-using VADEdit.Types;
+using VAD.Types;
 
-namespace VADEdit
+namespace VAD
 {
     public class ProjectConfig
     {

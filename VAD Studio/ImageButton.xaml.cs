@@ -6,9 +6,9 @@ using System.Windows.Data;
 using System.Windows.Input;
 using System.Windows.Media;
 using System.Windows.Media.Effects;
-using VADEdit.Converters;
+using VAD.Converters;
 
-namespace VADEdit
+namespace VAD
 {
     public partial class ImageButton : Button
     {

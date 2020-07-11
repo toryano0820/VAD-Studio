@@ -3,7 +3,7 @@ Microsoft Visual Studio Solution File, Format Version 12.00
 # Visual Studio 15
 VisualStudioVersion = 15.0.27703.2047
 MinimumVisualStudioVersion = 10.0.40219.1
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "VAD Edit", "VAD Edit\VAD Edit.csproj", "{A38DF1EB-589B-4BBC-A2D1-02A44737A499}"
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "VAD Studio", "VAD Studio\VAD Studio.csproj", "{A38DF1EB-589B-4BBC-A2D1-02A44737A499}"
 EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution

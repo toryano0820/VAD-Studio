@@ -8,10 +8,10 @@ using System.Windows;
 using System.Windows.Controls;
 using System.Windows.Input;
 using System.Windows.Media;
-using VADEdit.Types;
-using static VADEdit.Utils;
+using VAD.Types;
+using static VAD.Utils;
 
-namespace VADEdit
+namespace VAD
 {
     /// <summary>
     /// Interaction logic for WaveFormViewer.xaml

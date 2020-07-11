@@ -3,6 +3,4 @@
 obj/
 bin/
 packages/
-ffmpeg.exe
-service_account.json
 *.csproj.user

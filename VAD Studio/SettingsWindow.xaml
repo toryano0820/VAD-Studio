@@ -1,17 +1,17 @@
-﻿<Window x:Class="VADEdit.SettingsWindow"
+﻿<Window x:Class="VAD.SettingsWindow"
         xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
         xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
         xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
         xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
-        xmlns:local="clr-namespace:VADEdit"
-        xmlns:conv="clr-namespace:VADEdit.Converters"
+        xmlns:local="clr-namespace:VAD"
+        xmlns:converters="clr-namespace:VAD.Converters"
         xmlns:sys="clr-namespace:System;assembly=mscorlib"
         xmlns:xctl="http://schemas.xceed.com/wpf/xaml/toolkit"
         mc:Ignorable="d"
         Title="Options" Width="600" Height="700" WindowStyle="ToolWindow" WindowStartupLocation="CenterOwner" ShowInTaskbar="False">
     <Window.Resources>
-        <local:FalseToCollapsed x:Key="showOnCheck"/>
-        <local:TrueToCollapsed x:Key="hideOnCheck"/>
+        <converters:FalseToCollapsed x:Key="showOnCheck"/>
+        <converters:TrueToCollapsed x:Key="hideOnCheck"/>
     </Window.Resources>
     <Grid>
         <Grid.RowDefinitions>
@@ -46,13 +46,10 @@
                 </GroupBox>
                 <GroupBox Header="STT Options" Margin="10,0" Height="auto" >
                     <StackPanel Margin="5">
-                        <TextBlock Name="lblGoogleCredential"  Text="Credential Path" Margin="0,5,0,0" VerticalAlignment="Top" HorizontalAlignment="Left" />
-                        <Grid Name="grdGoogleCredential" Margin="0,5,0,0">
-                            <TextBox Name="txtSttCredentialPath" VerticalAlignment="Top" VerticalContentAlignment="Center" Height="25" Margin="0,0,29,0"/>
-                            <Button Name="btnSttCredentialPath" Content="..." Padding="0,-9,0,0" VerticalAlignment="Top" HorizontalAlignment="Right" FontSize="18" Width="24" Height="25" Click="btnSttCredentialPath_Click"/>
-                        </Grid>
+                        <TextBlock Margin="0,5,0,0" Text="URL" VerticalAlignment="Top" HorizontalAlignment="Left"/>
+                        <TextBox x:Name="txtSttUrl" VerticalContentAlignment="Center" HorizontalContentAlignment="Center" Height="25" VerticalAlignment="Top"/>
                         <TextBlock Margin="0,5,0,0" Text="Language Code" VerticalAlignment="Top" HorizontalAlignment="Left" />
-                        <ComboBox x:Name="cmbLanguage" VerticalContentAlignment="Center" HorizontalContentAlignment="Center" Height="25" VerticalAlignment="Top" HorizontalAlignment="Stretch" Margin="0,5,0,0">
+                        <ComboBox x:Name="cmbSttLanguage" VerticalContentAlignment="Center" HorizontalContentAlignment="Center" Height="25" VerticalAlignment="Top" HorizontalAlignment="Stretch" Margin="0,5,0,0">
                             <ComboBoxItem Content="en-US" />
                             <ComboBoxItem Content="fil-PH" />
                             <ComboBoxItem Content="th-TH" />
