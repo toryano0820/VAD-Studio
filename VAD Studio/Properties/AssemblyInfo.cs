@@ -7,12 +7,12 @@ using System.Windows;
 // General Information about an assembly is controlled through the following
 // set of attributes. Change these attribute values to modify the information
 // associated with an assembly.
-[assembly: AssemblyTitle("VAD Edit")]
-[assembly: AssemblyDescription("Voice Activity Detection Tool With Post Editor and STT")]
+[assembly: AssemblyTitle("VAD Studio")]
+[assembly: AssemblyDescription("Voice Activity Detection (VAD) Tool with Waveform Renderer")]
 [assembly: AssemblyConfiguration("")]
-[assembly: AssemblyCompany("NewEraAI Robotics")]
-[assembly: AssemblyProduct("VAD Edit")]
-[assembly: AssemblyCopyright("Copyright ©  2019")]
+[assembly: AssemblyCompany("")]
+[assembly: AssemblyProduct("VAD Studio")]
+[assembly: AssemblyCopyright("Copyright ©  2020")]
 [assembly: AssemblyTrademark("")]
 [assembly: AssemblyCulture("")]
 

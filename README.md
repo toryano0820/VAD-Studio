@@ -1,14 +1,14 @@
 **Voice Activity Detection (VAD) Tool**
 
-***Features***:
+***Features:***
 1. Automatically convert from video/audio to required WAV format
 2. Zoomable waveform renderer
 3. Control audio chunk durations directly from Waveform
 
-***Developer Instructions***
+***Developer Instructions:***
 1. Edit `SttClient.cs` to enable STT feature
 
-***User Instructions***
+***User Instructions:***
 1. Click `File` -> `New (Ctrl + N)` menu to opens `New Project Dialog`
 - Keep or change `Project Name`
 - Keep or change `Project Base Location`
